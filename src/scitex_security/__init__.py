@@ -12,6 +12,8 @@ Usage:
         print(f"Found {len(alerts)} security alerts!")
 """
 
+from __future__ import annotations
+
 try:
     from importlib.metadata import version as _v, PackageNotFoundError
     try:
@@ -30,6 +32,7 @@ from .github import (
 )
 
 __all__ = [
+    "__version__",
     "check_github_alerts",
     "save_alerts_to_file",
     "get_latest_alerts_file",
