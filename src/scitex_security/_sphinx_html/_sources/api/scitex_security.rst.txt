@@ -1,0 +1,14 @@
+﻿scitex\_security
+================
+
+.. automodule:: scitex_security
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   cli
+   github

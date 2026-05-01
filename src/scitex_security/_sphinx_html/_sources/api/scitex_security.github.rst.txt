@@ -1,0 +1,25 @@
+scitex\_security.github
+=======================
+
+.. automodule:: scitex_security.github
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_gh_auth
+      check_github_alerts
+      format_alerts_report
+      get_code_scanning_alerts
+      get_dependabot_alerts
+      get_latest_alerts_file
+      get_secret_alerts
+      save_alerts_to_file
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      GitHubSecurityError
+   
