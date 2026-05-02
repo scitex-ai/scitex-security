@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# File: ~/proj/scitex-code/src/scitex/security/cli.py
+# File: src/scitex_security/cli.py
 
+"""CLI for scitex-security — GitHub security-alert utilities.
+
+Subcommands follow the verb-noun convention (general/03_interface_02_cli):
+
+    scitex-security check [REPO]            # Check Dependabot/CodeQL alerts
+    scitex-security show-latest             # Print latest saved report
+    scitex-security list-python-apis        # Introspect public Python API
+    scitex-security mcp list-tools          # Introspect MCP tool surface (none)
 """
-Command-line interface for SciTeX security utilities.
 
-Usage:
-    scitex-security check                    # Check current repo
-    scitex-security check --repo owner/repo  # Check specific repo
-    scitex-security check --save             # Save to file
-"""
+from __future__ import annotations
 
-import sys
+import json as _json
 from pathlib import Path
-from typing import Optional
 
-try:
-    import click
-except ImportError:
-    # Fallback if click not installed
-    click = None
+import click
 
 from .github import (
     GitHubSecurityError,
@@ -30,97 +28,274 @@ from .github import (
 )
 
 
-def check_command(
-    repo: Optional[str] = None,
-    save: bool = False,
-    output_dir: Optional[str] = None,
-):
-    """Check GitHub security alerts."""
+def _version() -> str:
     try:
-        print("Checking GitHub security alerts...")
-        alerts = check_github_alerts(repo)
+        from importlib.metadata import version
 
-        # Count open alerts
+        return version("scitex-security")
+    except Exception:  # pragma: no cover
+        return "unknown"
+
+
+def _show_recursive_help(ctx: click.Context) -> None:
+    """Print help for the root group plus every subcommand recursively."""
+    click.echo(ctx.get_help())
+    click.echo()
+    group = ctx.command
+    if isinstance(group, click.Group):
+        for name in sorted(group.list_commands(ctx)):
+            cmd = group.get_command(ctx, name)
+            if cmd is None or cmd.hidden:
+                continue
+            sub_ctx = click.Context(cmd, parent=ctx, info_name=name)
+            click.echo("=" * 60)
+            click.echo(f"Command: {name}")
+            click.echo("=" * 60)
+            click.echo(sub_ctx.get_help())
+            click.echo()
+            if isinstance(cmd, click.Group):
+                for sub_name in sorted(cmd.list_commands(sub_ctx)):
+                    sub_cmd = cmd.get_command(sub_ctx, sub_name)
+                    if sub_cmd is None or sub_cmd.hidden:
+                        continue
+                    sub_sub_ctx = click.Context(
+                        sub_cmd, parent=sub_ctx, info_name=sub_name
+                    )
+                    click.echo("-" * 60)
+                    click.echo(f"Command: {name} {sub_name}")
+                    click.echo("-" * 60)
+                    click.echo(sub_sub_ctx.get_help())
+                    click.echo()
+
+
+@click.group(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    invoke_without_command=True,
+)
+@click.version_option(_version(), "-V", "--version", prog_name="scitex-security")
+@click.help_option("-h", "--help")
+@click.option("--help-recursive", is_flag=True, help="Show help for all subcommands.")
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    help="Emit structured JSON output (propagates to subcommands that honour it).",
+)
+@click.pass_context
+def main(ctx: click.Context, help_recursive: bool, as_json: bool) -> None:
+    """scitex-security — GitHub security-alert utilities (Dependabot, CodeQL, secret scanning).
+
+    \b
+    Config is loaded with the SciTeX precedence chain:
+      config.yaml -> $SCITEX_SECURITY_CONFIG -> ~/.scitex/security/config.yaml -> defaults
+    """
+    ctx.ensure_object(dict)
+    ctx.obj["as_json"] = as_json
+    if help_recursive:
+        _show_recursive_help(ctx)
+        ctx.exit(0)
+    elif ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+
+
+@main.command("check")
+@click.argument("repo", required=True)
+@click.option(
+    "--save", is_flag=True, help="Save the report to ./logs/security/<timestamp>.txt."
+)
+@click.option(
+    "--output-dir",
+    default=None,
+    help="Output directory for --save (default: ./logs/security).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON instead of text.")
+@click.pass_context
+def check_cmd(
+    ctx: click.Context,
+    repo: "str | None",
+    save: bool,
+    output_dir: "str | None",
+    as_json: bool,
+) -> None:
+    """Check Dependabot / CodeQL / secret-scanning alerts for REPO.
+
+    REPO is 'owner/repo'. Use '.' to auto-detect from the current git repo.
+
+    \b
+    Example:
+      $ scitex-security check .
+      $ scitex-security check ywatanabe1989/scitex-security
+      $ scitex-security check ywatanabe1989/scitex-security --save
+      $ scitex-security check . --json
+    """
+    as_json = as_json or bool(ctx.obj.get("as_json"))
+    try:
+        alerts = check_github_alerts(None if repo == "." else repo)
+
         total = sum(
             len([a for a in alerts[key] if a.get("state") == "open"]) for key in alerts
         )
 
+        saved_path = None
         if save:
-            output_path = Path(output_dir) if output_dir else None
-            file_path = save_alerts_to_file(alerts, output_path)
-            print(f"\nReport saved to: {file_path}")
-            print(f"Latest symlink: {file_path.parent / 'security-latest.txt'}")
+            out_path = Path(output_dir) if output_dir else None
+            saved_path = save_alerts_to_file(alerts, out_path)
 
-        # Print report
-        print("\n" + format_alerts_report(alerts))
-
-        # Exit with error code if alerts found
-        if total > 0:
-            print(f"\n❌ Found {total} open security alert(s)")
-            sys.exit(1)
+        if as_json:
+            payload = {
+                "repo": repo,
+                "open_alerts": total,
+                "alerts": alerts,
+                "saved_path": str(saved_path) if saved_path else None,
+            }
+            click.echo(_json.dumps(payload, indent=2, default=str))
         else:
-            print("\n✓ No security alerts found")
-            sys.exit(0)
+            if saved_path:
+                click.echo(f"Report saved to: {saved_path}")
+                click.echo(
+                    f"Latest symlink: {saved_path.parent / 'security-latest.txt'}"
+                )
+            click.echo(format_alerts_report(alerts))
+            if total > 0:
+                click.echo(f"Found {total} open security alert(s)", err=True)
+
+        ctx.exit(1 if total > 0 else 0)
 
     except GitHubSecurityError as e:
-        print(f"ERROR: {e}", file=sys.stderr)
-        sys.exit(1)
+        if as_json:
+            click.echo(_json.dumps({"error": str(e)}, indent=2), err=True)
+        else:
+            click.echo(f"ERROR: {e}", err=True)
+        ctx.exit(2)
 
 
-def latest_command(security_dir: Optional[str] = None):
-    """Show the latest security alerts file."""
+@main.command("show-latest")
+@click.option(
+    "--security-dir",
+    default=None,
+    help="Directory holding saved reports (default: ./logs/security).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON instead of text.")
+@click.pass_context
+def show_latest_cmd(
+    ctx: click.Context, security_dir: "str | None", as_json: bool
+) -> None:
+    """Print the most recent saved security-alerts report.
+
+    \b
+    Example:
+      $ scitex-security show-latest
+      $ scitex-security show-latest --security-dir ./logs/security
+      $ scitex-security show-latest --json
+    """
+    as_json = as_json or bool(ctx.obj.get("as_json"))
     try:
         dir_path = Path(security_dir) if security_dir else None
         latest_file = get_latest_alerts_file(dir_path)
 
-        if latest_file:
-            print(latest_file.read_text())
+        if not latest_file:
+            if as_json:
+                click.echo(_json.dumps({"latest": None}, indent=2))
+            else:
+                click.echo("No security alerts files found", err=True)
+            ctx.exit(1)
+
+        if as_json:
+            click.echo(
+                _json.dumps(
+                    {"latest": str(latest_file), "content": latest_file.read_text()},
+                    indent=2,
+                )
+            )
         else:
-            print("No security alerts files found")
-            sys.exit(1)
+            click.echo(latest_file.read_text())
 
     except Exception as e:
-        print(f"ERROR: {e}", file=sys.stderr)
-        sys.exit(1)
+        if as_json:
+            click.echo(_json.dumps({"error": str(e)}, indent=2), err=True)
+        else:
+            click.echo(f"ERROR: {e}", err=True)
+        ctx.exit(2)
 
 
-def main():
-    """Main entry point for CLI."""
-    import argparse
+# -- Introspection ----------------------------------------------------------
 
-    parser = argparse.ArgumentParser(
-        description="SciTeX Security - GitHub security alerts checker"
-    )
 
-    subparsers = parser.add_subparsers(dest="command", help="Commands")
+@main.command("list-python-apis")
+@click.option("-v", "--verbose", count=True, help="-v names, -vv +sigs, -vvv +docs")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+@click.pass_context
+def list_python_apis(ctx: click.Context, verbose: int, as_json: bool) -> None:
+    """List public Python APIs in scitex-security.
 
-    # Check command
-    check_parser = subparsers.add_parser("check", help="Check GitHub security alerts")
-    check_parser.add_argument(
-        "--repo", help="Repository in format 'owner/repo' (default: current repo)"
-    )
-    check_parser.add_argument("--save", action="store_true", help="Save report to file")
-    check_parser.add_argument(
-        "--output-dir", help="Output directory (default: ./logs/security)"
-    )
+    \b
+    Example:
+      $ scitex-security list-python-apis
+      $ scitex-security list-python-apis -vv
+      $ scitex-security list-python-apis --json
+    """
+    import inspect
 
-    # Latest command
-    latest_parser = subparsers.add_parser("latest", help="Show latest security alerts")
-    latest_parser.add_argument(
-        "--dir",
-        dest="security_dir",
-        help="Security directory (default: ./logs/security)",
-    )
+    import scitex_security
 
-    args = parser.parse_args()
+    as_json = as_json or bool(ctx.obj.get("as_json"))
 
-    if args.command == "check":
-        check_command(args.repo, args.save, args.output_dir)
-    elif args.command == "latest":
-        latest_command(args.security_dir)
-    else:
-        parser.print_help()
-        sys.exit(1)
+    names = sorted(getattr(scitex_security, "__all__", []))
+    apis = []
+    for name in names:
+        obj = getattr(scitex_security, name, None)
+        if obj is None:
+            continue
+        entry = {"name": name, "type": type(obj).__name__}
+        if callable(obj):
+            try:
+                entry["signature"] = str(inspect.signature(obj))
+            except (TypeError, ValueError):
+                pass
+        doc = inspect.getdoc(obj) or ""
+        if doc:
+            entry["doc"] = doc.strip().split("\n")[0]
+        apis.append(entry)
+
+    if as_json:
+        click.echo(_json.dumps({"module": "scitex_security", "apis": apis}, indent=2))
+        return
+
+    click.secho("scitex_security Python APIs", fg="cyan", bold=True)
+    for api in apis:
+        sig = api.get("signature", "")
+        click.echo(f"  {click.style(api['name'], fg='green')}{sig}")
+        if verbose >= 2 and api.get("doc"):
+            click.echo(f"    {api['doc']}")
+
+
+# -- MCP --------------------------------------------------------------------
+
+
+@main.group(invoke_without_command=True)
+@click.pass_context
+def mcp(ctx: click.Context) -> None:
+    """MCP (Model Context Protocol) commands. scitex-security ships no MCP server."""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+
+
+@mcp.command("list-tools")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+@click.pass_context
+def mcp_list_tools(ctx: click.Context, as_json: bool) -> None:
+    """List MCP tools exposed by scitex-security (currently none).
+
+    \b
+    Example:
+      $ scitex-security mcp list-tools
+      $ scitex-security mcp list-tools --json
+    """
+    as_json = as_json or bool(ctx.obj.get("as_json"))
+    if as_json:
+        click.echo(_json.dumps({"total": 0, "tools": []}, indent=2))
+        return
+    click.secho("scitex-security MCP: 0 tools (no MCP server)", fg="cyan", bold=True)
 
 
 if __name__ == "__main__":

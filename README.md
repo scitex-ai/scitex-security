@@ -1,15 +1,5 @@
 # scitex-security
 
-<!-- scitex-badges:start -->
-[![PyPI](https://img.shields.io/pypi/v/scitex-security.svg)](https://pypi.org/project/scitex-security/)
-[![Python](https://img.shields.io/pypi/pyversions/scitex-security.svg)](https://pypi.org/project/scitex-security/)
-[![Tests](https://github.com/ywatanabe1989/scitex-security/actions/workflows/test.yml/badge.svg)](https://github.com/ywatanabe1989/scitex-security/actions/workflows/test.yml)
-[![Install Test](https://github.com/ywatanabe1989/scitex-security/actions/workflows/install-test.yml/badge.svg)](https://github.com/ywatanabe1989/scitex-security/actions/workflows/install-test.yml)
-[![Coverage](https://codecov.io/gh/ywatanabe1989/scitex-security/graph/badge.svg)](https://codecov.io/gh/ywatanabe1989/scitex-security)
-[![Docs](https://readthedocs.org/projects/scitex-security/badge/?version=latest)](https://scitex-security.readthedocs.io/en/latest/)
-[![License: AGPL v3](https://img.shields.io/badge/license-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-<!-- scitex-badges:end -->
-
 <p align="center">
   <a href="https://scitex.ai">
     <img src="docs/scitex-logo-blue-cropped.png" alt="SciTeX" width="400">
@@ -22,6 +12,18 @@
   <a href="https://scitex-security.readthedocs.io/">Full Documentation</a> · <code>pip install scitex-security</code>
 </p>
 
+<!-- scitex-badges:start -->
+<p align="center">
+  <a href="https://pypi.org/project/scitex-security/"><img src="https://img.shields.io/pypi/v/scitex-security.svg" alt="PyPI"></a>
+  <a href="https://pypi.org/project/scitex-security/"><img src="https://img.shields.io/pypi/pyversions/scitex-security.svg" alt="Python"></a>
+  <a href="https://github.com/ywatanabe1989/scitex-security/actions/workflows/test.yml"><img src="https://github.com/ywatanabe1989/scitex-security/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/ywatanabe1989/scitex-security/actions/workflows/install-test.yml"><img src="https://github.com/ywatanabe1989/scitex-security/actions/workflows/install-test.yml/badge.svg" alt="Install Test"></a>
+  <a href="https://codecov.io/gh/ywatanabe1989/scitex-security"><img src="https://codecov.io/gh/ywatanabe1989/scitex-security/graph/badge.svg" alt="Coverage"></a>
+  <a href="https://scitex-security.readthedocs.io/en/latest/"><img src="https://readthedocs.org/projects/scitex-security/badge/?version=latest" alt="Docs"></a>
+  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/license-AGPL_v3-blue.svg" alt="License: AGPL v3"></a>
+</p>
+<!-- scitex-badges:end -->
+
 ---
 
 ## Installation
@@ -33,7 +35,7 @@ pip install scitex-security
 ## 2 Interfaces
 
 <details open>
-<summary><strong>Python API</strong></summary>
+<summary><strong>Python API (primary)</strong></summary>
 
 <br>
 
@@ -59,10 +61,23 @@ save_alerts_to_file(alerts, output_dir=".scitex/security")
 
 ```bash
 scitex-security check ywatanabe1989/myrepo
-scitex-security latest --output .scitex/security
+scitex-security show-latest --security-dir ./logs/security
 ```
 
 </details>
+
+## Quick Start
+
+See the Python API block above for the minimal end-to-end example.
+
+## Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `SCITEX_SECURITY_CONFIG` | Path to a YAML config file (overrides `~/.scitex/security/config.yaml`). | unset |
+| `GH_TOKEN` / `GITHUB_TOKEN` | Auth token used by the underlying `gh` CLI subprocess. | unset |
+
+Config precedence: explicit path → `$SCITEX_SECURITY_CONFIG` → `~/.scitex/security/config.yaml` → built-in defaults.
 
 ## Status
 
