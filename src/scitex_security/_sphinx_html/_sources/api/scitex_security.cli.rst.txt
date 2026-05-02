@@ -4,11 +4,3 @@ scitex\_security.cli
 .. automodule:: scitex_security.cli
 
    
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      check_command
-      latest_command
-      main
-   

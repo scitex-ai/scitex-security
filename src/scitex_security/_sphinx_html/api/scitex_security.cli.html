@@ -56,12 +56,7 @@
 <li class="toctree-l2"><a class="reference internal" href="scitex_security.html#scitex_security.get_latest_alerts_file"><code class="docutils literal notranslate"><span class="pre">get_latest_alerts_file()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="scitex_security.html#scitex_security.format_alerts_report"><code class="docutils literal notranslate"><span class="pre">format_alerts_report()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="scitex_security.html#scitex_security.GitHubSecurityError"><code class="docutils literal notranslate"><span class="pre">GitHubSecurityError</span></code></a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">scitex_security.cli</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#scitex_security.cli.check_command"><code class="docutils literal notranslate"><span class="pre">check_command()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitex_security.cli.latest_command"><code class="docutils literal notranslate"><span class="pre">latest_command()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitex_security.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">scitex_security.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scitex_security.github.html">scitex_security.github</a></li>
 </ul>
 </li>
@@ -94,45 +89,14 @@
              
   <section id="module-scitex_security.cli">
 <span id="scitex-security-cli"></span><h1>scitex_security.cli<a class="headerlink" href="#module-scitex_security.cli" title="Link to this heading"></a></h1>
-<p>Command-line interface for SciTeX security utilities.</p>
-<dl class="simple">
-<dt>Usage:</dt><dd><p>scitex-security check                    # Check current repo
-scitex-security check –repo owner/repo  # Check specific repo
-scitex-security check –save             # Save to file</p>
-</dd>
-</dl>
-<p class="rubric">Functions</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#scitex_security.cli.check_command" title="scitex_security.cli.check_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_command</span></code></a>([repo, save, output_dir])</p></td>
-<td><p>Check GitHub security alerts.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#scitex_security.cli.latest_command" title="scitex_security.cli.latest_command"><code class="xref py py-obj docutils literal notranslate"><span class="pre">latest_command</span></code></a>([security_dir])</p></td>
-<td><p>Show the latest security alerts file.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#scitex_security.cli.main" title="scitex_security.cli.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
-<td><p>Main entry point for CLI.</p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py function">
-<dt class="sig sig-object py" id="scitex_security.cli.check_command">
-<span class="sig-prename descclassname"><span class="pre">scitex_security.cli.</span></span><span class="sig-name descname"><span class="pre">check_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scitex_security/cli.html#check_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scitex_security.cli.check_command" title="Link to this definition"></a></dt>
-<dd><p>Check GitHub security alerts.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="scitex_security.cli.latest_command">
-<span class="sig-prename descclassname"><span class="pre">scitex_security.cli.</span></span><span class="sig-name descname"><span class="pre">latest_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">security_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scitex_security/cli.html#latest_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scitex_security.cli.latest_command" title="Link to this definition"></a></dt>
-<dd><p>Show the latest security alerts file.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="scitex_security.cli.main">
-<span class="sig-prename descclassname"><span class="pre">scitex_security.cli.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scitex_security/cli.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scitex_security.cli.main" title="Link to this definition"></a></dt>
-<dd><p>Main entry point for CLI.</p>
-</dd></dl>
-
+<p>CLI for scitex-security — GitHub security-alert utilities.</p>
+<p>Subcommands follow the verb-noun convention (general/03_interface_02_cli):</p>
+<blockquote>
+<div><p>scitex-security check [REPO]            # Check Dependabot/CodeQL alerts
+scitex-security show-latest             # Print latest saved report
+scitex-security list-python-apis        # Introspect public Python API
+scitex-security mcp list-tools          # Introspect MCP tool surface (none)</p>
+</div></blockquote>
 </section>
 
 
