@@ -298,6 +298,13 @@ def mcp_list_tools(ctx: click.Context, as_json: bool) -> None:
     click.secho("scitex-security MCP: 0 tools (no MCP server)", fg="cyan", bold=True)
 
 
+# Wire the skills group (audit-cli §1a — packages with _skills/ MUST
+# expose `<cli> skills {list,get,install}`).
+from ._skills import skills_group as _skills_group
+
+main.add_command(_skills_group, name="skills")
+
+
 if __name__ == "__main__":
     main()
 
@@ -305,9 +312,9 @@ if __name__ == "__main__":
 # audit §4 — inject version into root --help
 try:
     from importlib.metadata import version as _v
+
     main.help = (
-        f"scitex-security (v{_v('scitex-security')}) — "
-        + (main.help or "").lstrip()
+        f"scitex-security (v{_v('scitex-security')}) — " + (main.help or "").lstrip()
     )
 except Exception:
     pass
