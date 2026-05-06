@@ -300,3 +300,14 @@ def mcp_list_tools(ctx: click.Context, as_json: bool) -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# audit §4 — inject version into root --help
+try:
+    from importlib.metadata import version as _v
+    main.help = (
+        f"scitex-security (v{_v('scitex-security')}) — "
+        + (main.help or "").lstrip()
+    )
+except Exception:
+    pass
