@@ -32,6 +32,33 @@
 pip install scitex-security
 ```
 
+## Architecture
+
+```
+src/scitex_security/
+├── __init__.py     # public re-exports
+├── github.py       # GitHub alert collection (Dependabot / secret / code scanning)
+├── cli.py          # `scitex-security check` / `show-latest`
+├── __main__.py     # python -m scitex_security
+└── _skills.py      # bundled agent skills
+
+Runtime flow:
+  scitex-security check <owner/repo>
+        │
+        ▼
+  github.check_github_alerts()
+        │ subprocess
+        ▼
+  gh api repos/<owner>/<repo>/{dependabot,secret-scanning,code-scanning}/alerts
+        │
+        ▼
+  format_alerts_report() → save_alerts_to_file(.scitex/security/)
+```
+
+`scitex-security` shells out to `gh` (GitHub CLI) and never touches
+your tokens directly — `GH_TOKEN` / `GITHUB_TOKEN` are read by the
+`gh` subprocess from the environment, not from this package.
+
 ## 2 Interfaces
 
 <details open>
@@ -65,6 +92,24 @@ scitex-security show-latest --security-dir ./logs/security
 ```
 
 </details>
+
+## Demo
+
+```mermaid
+flowchart LR
+    user["scitex-security check\nywatanabe1989/myrepo"] --> api["check_github_alerts()"]
+    env["GH_TOKEN /\nGITHUB_TOKEN"] -.-> gh["gh CLI subprocess"]
+    api --> gh
+    gh --> dep["Dependabot alerts"]
+    gh --> sec["secret-scanning alerts"]
+    gh --> code["code-scanning alerts"]
+    dep --> report["format_alerts_report()"]
+    sec --> report
+    code --> report
+    report --> stdout[("terminal report")]
+    report --> save["save_alerts_to_file()"]
+    save --> json[(".scitex/security/<ts>.json")]
+```
 
 ## Quick Start
 
