@@ -10,12 +10,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scitex_security.cli import check_command, latest_command, main
+from scitex_security.cli import check_cmd, show_latest_cmd, main
 from scitex_security.github import GitHubSecurityError
 
 
 class TestCheckCommand:
-    """Tests for check_command function."""
+    """Tests for check_cmd function."""
 
     @patch("scitex_security.cli.format_alerts_report")
     @patch("scitex_security.cli.check_github_alerts")
@@ -25,7 +25,7 @@ class TestCheckCommand:
         mock_format.return_value = "No alerts"
 
         with pytest.raises(SystemExit) as exc_info:
-            check_command()
+            check_cmd()
         assert exc_info.value.code == 0
 
         captured = capsys.readouterr()
@@ -43,7 +43,7 @@ class TestCheckCommand:
         mock_format.return_value = "Found alerts"
 
         with pytest.raises(SystemExit) as exc_info:
-            check_command()
+            check_cmd()
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
@@ -57,7 +57,7 @@ class TestCheckCommand:
         mock_format.return_value = "Report"
 
         with pytest.raises(SystemExit):
-            check_command(repo="owner/repo")
+            check_cmd(repo="owner/repo")
 
         mock_check.assert_called_once_with("owner/repo")
 
@@ -71,7 +71,7 @@ class TestCheckCommand:
         mock_save.return_value = Path("/tmp/security-test.txt")
 
         with pytest.raises(SystemExit):
-            check_command(save=True)
+            check_cmd(save=True)
 
         mock_save.assert_called_once()
 
@@ -85,7 +85,7 @@ class TestCheckCommand:
         mock_save.return_value = Path("/custom/dir/security.txt")
 
         with pytest.raises(SystemExit):
-            check_command(save=True, output_dir="/custom/dir")
+            check_cmd(save=True, output_dir="/custom/dir")
 
         call_args = mock_save.call_args
         assert call_args[0][1] == Path("/custom/dir")
@@ -96,7 +96,7 @@ class TestCheckCommand:
         mock_check.side_effect = GitHubSecurityError("Auth failed")
 
         with pytest.raises(SystemExit) as exc_info:
-            check_command()
+            check_cmd()
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
@@ -115,7 +115,7 @@ class TestCheckCommand:
         mock_format.return_value = "Report"
 
         with pytest.raises(SystemExit) as exc_info:
-            check_command()
+            check_cmd()
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
@@ -133,12 +133,12 @@ class TestCheckCommand:
         mock_format.return_value = "Report"
 
         with pytest.raises(SystemExit) as exc_info:
-            check_command()
+            check_cmd()
         assert exc_info.value.code == 0
 
 
 class TestLatestCommand:
-    """Tests for latest_command function."""
+    """Tests for show_latest_cmd function."""
 
     @patch("scitex_security.cli.get_latest_alerts_file")
     def test_displays_file_content(self, mock_get_latest, tmp_path, capsys):
@@ -148,7 +148,7 @@ class TestLatestCommand:
         mock_get_latest.return_value = test_file
 
         # No exit on success (falls through)
-        latest_command(str(tmp_path))
+        show_latest_cmd(str(tmp_path))
 
         captured = capsys.readouterr()
         assert "Security Report Content" in captured.out
@@ -159,7 +159,7 @@ class TestLatestCommand:
         mock_get_latest.return_value = None
 
         with pytest.raises(SystemExit) as exc_info:
-            latest_command()
+            show_latest_cmd()
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
@@ -173,7 +173,7 @@ class TestLatestCommand:
         mock_get_latest.return_value = test_file
 
         # No exit on success (falls through)
-        latest_command()
+        show_latest_cmd()
 
         captured = capsys.readouterr()
         assert "Report content here" in captured.out
@@ -184,7 +184,7 @@ class TestLatestCommand:
         mock_get_latest.return_value = None
 
         with pytest.raises(SystemExit):
-            latest_command(security_dir=str(tmp_path))
+            show_latest_cmd(security_dir=str(tmp_path))
 
         mock_get_latest.assert_called_once_with(Path(str(tmp_path)))
 
@@ -194,7 +194,7 @@ class TestLatestCommand:
         mock_get_latest.side_effect = Exception("File error")
 
         with pytest.raises(SystemExit) as exc_info:
-            latest_command()
+            show_latest_cmd()
         assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
@@ -212,9 +212,9 @@ class TestMain:
             main()
         assert exc_info.value.code == 1
 
-    @patch("scitex_security.cli.check_command")
+    @patch("scitex_security.cli.check_cmd")
     def test_check_command_called(self, mock_check, monkeypatch):
-        """Test that 'check' subcommand calls check_command."""
+        """Test that 'check' subcommand calls check_cmd."""
         monkeypatch.setattr(sys, "argv", ["scitex-security", "check"])
         mock_check.side_effect = SystemExit(0)
 
@@ -223,9 +223,9 @@ class TestMain:
 
         mock_check.assert_called_once_with(None, False, None)
 
-    @patch("scitex_security.cli.check_command")
+    @patch("scitex_security.cli.check_cmd")
     def test_check_with_repo(self, mock_check, monkeypatch):
-        """Test that --repo is passed to check_command."""
+        """Test that --repo is passed to check_cmd."""
         monkeypatch.setattr(
             sys, "argv", ["scitex-security", "check", "--repo", "org/repo"]
         )
@@ -236,9 +236,9 @@ class TestMain:
 
         mock_check.assert_called_once_with("org/repo", False, None)
 
-    @patch("scitex_security.cli.check_command")
+    @patch("scitex_security.cli.check_cmd")
     def test_check_with_save(self, mock_check, monkeypatch):
-        """Test that --save is passed to check_command."""
+        """Test that --save is passed to check_cmd."""
         monkeypatch.setattr(sys, "argv", ["scitex-security", "check", "--save"])
         mock_check.side_effect = SystemExit(0)
 
@@ -247,9 +247,9 @@ class TestMain:
 
         mock_check.assert_called_once_with(None, True, None)
 
-    @patch("scitex_security.cli.check_command")
+    @patch("scitex_security.cli.check_cmd")
     def test_check_with_output_dir(self, mock_check, monkeypatch):
-        """Test that --output-dir is passed to check_command."""
+        """Test that --output-dir is passed to check_cmd."""
         monkeypatch.setattr(
             sys, "argv", ["scitex-security", "check", "--output-dir", "/custom/path"]
         )
@@ -260,7 +260,7 @@ class TestMain:
 
         mock_check.assert_called_once_with(None, False, "/custom/path")
 
-    @patch("scitex_security.cli.check_command")
+    @patch("scitex_security.cli.check_cmd")
     def test_check_with_all_options(self, mock_check, monkeypatch):
         """Test check command with all options."""
         monkeypatch.setattr(
@@ -283,18 +283,18 @@ class TestMain:
 
         mock_check.assert_called_once_with("owner/repo", True, "/out")
 
-    @patch("scitex_security.cli.latest_command")
+    @patch("scitex_security.cli.show_latest_cmd")
     def test_latest_command_called(self, mock_latest, monkeypatch):
-        """Test that 'latest' subcommand calls latest_command."""
+        """Test that 'latest' subcommand calls show_latest_cmd."""
         monkeypatch.setattr(sys, "argv", ["scitex-security", "latest"])
 
         main()
 
         mock_latest.assert_called_once_with(None)
 
-    @patch("scitex_security.cli.latest_command")
+    @patch("scitex_security.cli.show_latest_cmd")
     def test_latest_with_dir(self, mock_latest, monkeypatch):
-        """Test that --dir is passed to latest_command."""
+        """Test that --dir is passed to show_latest_cmd."""
         monkeypatch.setattr(
             sys, "argv", ["scitex-security", "latest", "--dir", "/logs/security"]
         )
@@ -378,7 +378,7 @@ if __name__ == "__main__":
 # )
 #
 #
-# def check_command(
+# def check_cmd(
 #     repo: Optional[str] = None,
 #     save: bool = False,
 #     output_dir: Optional[str] = None,
@@ -415,7 +415,7 @@ if __name__ == "__main__":
 #         sys.exit(1)
 #
 #
-# def latest_command(security_dir: Optional[str] = None):
+# def show_latest_cmd(security_dir: Optional[str] = None):
 #     """Show the latest security alerts file."""
 #     try:
 #         dir_path = Path(security_dir) if security_dir else None
@@ -463,9 +463,9 @@ if __name__ == "__main__":
 #     args = parser.parse_args()
 #
 #     if args.command == "check":
-#         check_command(args.repo, args.save, args.output_dir)
+#         check_cmd(args.repo, args.save, args.output_dir)
 #     elif args.command == "latest":
-#         latest_command(args.security_dir)
+#         show_latest_cmd(args.security_dir)
 #     else:
 #         parser.print_help()
 #         sys.exit(1)
