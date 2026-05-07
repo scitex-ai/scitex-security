@@ -189,33 +189,42 @@ def show_latest_cmd(
       $ scitex-security show-latest --json
     """
     as_json = as_json or bool(ctx.obj.get("as_json"))
+    dir_path = Path(security_dir) if security_dir else None
+
     try:
-        dir_path = Path(security_dir) if security_dir else None
         latest_file = get_latest_alerts_file(dir_path)
-
-        if not latest_file:
-            if as_json:
-                click.echo(_json.dumps({"latest": None}, indent=2))
-            else:
-                click.echo("No security alerts files found", err=True)
-            ctx.exit(1)
-
-        if as_json:
-            click.echo(
-                _json.dumps(
-                    {"latest": str(latest_file), "content": latest_file.read_text()},
-                    indent=2,
-                )
-            )
-        else:
-            click.echo(latest_file.read_text())
-
     except Exception as e:
         if as_json:
             click.echo(_json.dumps({"error": str(e)}, indent=2), err=True)
         else:
             click.echo(f"ERROR: {e}", err=True)
         ctx.exit(2)
+        return
+
+    if not latest_file:
+        if as_json:
+            click.echo(_json.dumps({"latest": None}, indent=2))
+        else:
+            click.echo("No security alerts files found", err=True)
+        ctx.exit(1)
+        return
+
+    try:
+        content = latest_file.read_text()
+    except Exception as e:
+        if as_json:
+            click.echo(_json.dumps({"error": str(e)}, indent=2), err=True)
+        else:
+            click.echo(f"ERROR: {e}", err=True)
+        ctx.exit(2)
+        return
+
+    if as_json:
+        click.echo(
+            _json.dumps({"latest": str(latest_file), "content": content}, indent=2)
+        )
+    else:
+        click.echo(content)
 
 
 # -- Introspection ----------------------------------------------------------
