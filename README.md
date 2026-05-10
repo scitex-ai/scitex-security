@@ -9,7 +9,7 @@
 <p align="center"><b>GitHub security-alert utilities — Dependabot, secret scanning, code scanning. Pure stdlib + `gh` subprocess, zero scitex.* runtime deps.</b></p>
 
 <p align="center">
-  <a href="https://scitex-security.readthedocs.io/">Full Documentation</a> · <code>pip install scitex-security</code>
+  <a href="https://scitex-security.readthedocs.io/">Full Documentation</a> · <code>uv pip install scitex-security[all]</code>
 </p>
 
 <!-- scitex-badges:start -->
