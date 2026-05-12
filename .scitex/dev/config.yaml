@@ -1,0 +1,10 @@
+# scitex-dev per-package config — overrides defaults for `scitex-dev` CLI
+# audits and helpers run against this repo. Tracked via the .gitignore
+# exception so every contributor sees the same audit behaviour.
+
+audit:
+  root-whitelist:
+    files:
+      # Codecov's documented location for the project's codecov.yml
+      # is the repo root; see 02_package_11_ci-and-codecov.md.
+      - codecov.yml

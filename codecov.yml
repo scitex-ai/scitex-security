@@ -1,0 +1,17 @@
+coverage:
+  status:
+    project:
+      default:
+        # scitex-security is ramping up; switch to a hard 90% target after
+        # the coverage push lands.
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false

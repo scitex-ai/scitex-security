@@ -25,7 +25,9 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "scitex-dev>=0.11.7",
+    # tests/develop/test_audit.py imports scitex_dev.testing.audit_all_for_package
+    # which transitively needs the [cli-audit] extra.
+    "scitex-dev[cli-audit]>=0.11.7",
 ]
 docs = [
     "sphinx>=7.0",
@@ -58,6 +60,11 @@ scitex-security = "scitex_security"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--disable-warnings"]
+
+[tool.coverage.run]
+parallel = true
+source = ["scitex_security"]
+concurrency = ["multiprocessing", "thread"]
 
 [tool.ruff]
 target-version = "py39"
