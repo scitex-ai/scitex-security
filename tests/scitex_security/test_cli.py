@@ -1,191 +1,311 @@
 #!/usr/bin/env python3
 """Tests for scitex_security.cli — Click-based CLI surface.
 
-All subcommands depend on `ctx.obj` set by the parent `main` group, so we
-invoke them through `main` (e.g. `["check", "owner/repo"]`) rather than
-calling the subcommand functions directly.
+All subcommands depend on ``ctx.obj`` set by the parent ``main`` group,
+so we invoke them through ``main`` (e.g. ``["check", "owner/repo"]``)
+rather than calling the subcommand functions directly.
+
+No mocks (PA-306): the CLI imports its collaborators at module load
+time via ``from .github import ...``, so we swap them on the cli
+module namespace with the ``swap_attrs`` context manager from
+``tests/_helpers.py``. Each test asserts exactly one property.
 """
 
 from pathlib import Path
-from unittest.mock import patch
 
+import pytest
 from click.testing import CliRunner
 
+from _helpers import (
+    FakeAlertFn,
+    FakeFormatReport,
+    FakeLatestPath,
+    FakeSavePath,
+    swap_attrs,
+)
+from scitex_security import cli as cli_module
 from scitex_security.cli import main
 from scitex_security.github import GitHubSecurityError
 
-# --- check ----------------------------------------------------------------
+
+def _no_alerts():
+    return {"secrets": [], "dependabot": [], "code_scanning": []}
+
+
+# ---------------------------------------------------------------------------
+# main check ...
+# ---------------------------------------------------------------------------
 
 
 class TestCheckCommand:
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_no_alerts_exits_zero(self, mock_check, mock_format):
-        mock_check.return_value = {"secrets": [], "dependabot": [], "code_scanning": []}
-        mock_format.return_value = "No alerts"
+    """Tests for the ``check`` subcommand."""
 
-        result = CliRunner().invoke(main, ["check", "owner/repo"])
+    def test_no_alerts_path_exits_zero(self):
+        # Arrange
+        check_fn = FakeAlertFn(return_value=_no_alerts())
+        fmt_fn = FakeFormatReport(return_value="No alerts")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
+        ):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert result.exit_code == 0
 
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_open_alerts_exits_one(self, mock_check, mock_format):
-        mock_check.return_value = {
+    def test_open_alerts_path_exits_one(self):
+        # Arrange
+        alerts = {
             "secrets": [{"state": "open"}],
             "dependabot": [],
             "code_scanning": [],
         }
-        mock_format.return_value = "Found alerts"
-
-        result = CliRunner().invoke(main, ["check", "owner/repo"])
+        check_fn = FakeAlertFn(return_value=alerts)
+        fmt_fn = FakeFormatReport(return_value="Found alerts")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
+        ):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert result.exit_code == 1
+
+    def test_open_alerts_message_reports_count(self):
+        # Arrange
+        alerts = {
+            "secrets": [{"state": "open"}],
+            "dependabot": [],
+            "code_scanning": [],
+        }
+        check_fn = FakeAlertFn(return_value=alerts)
+        fmt_fn = FakeFormatReport(return_value="Found alerts")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
+        ):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert "Found 1 open security alert" in result.output
 
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_passes_repo_argument(self, mock_check, mock_format):
-        mock_check.return_value = {"secrets": [], "dependabot": [], "code_scanning": []}
-        mock_format.return_value = "Report"
+    def test_repo_argument_is_forwarded_to_check(self):
+        # Arrange
+        check_fn = FakeAlertFn(return_value=_no_alerts())
+        fmt_fn = FakeFormatReport(return_value="Report")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
+        ):
+            CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
+        assert check_fn.calls == ["owner/repo"]
 
-        CliRunner().invoke(main, ["check", "owner/repo"])
-        mock_check.assert_called_once_with("owner/repo")
+    def test_save_flag_invokes_save_alerts_function(self):
+        # Arrange
+        check_fn = FakeAlertFn(return_value=_no_alerts())
+        fmt_fn = FakeFormatReport(return_value="Report")
+        save_fn = FakeSavePath(return_value=Path("/tmp/security-test.txt"))
+        # Act
+        with swap_attrs(
+            cli_module,
+            check_github_alerts=check_fn,
+            format_alerts_report=fmt_fn,
+            save_alerts_to_file=save_fn,
+        ):
+            CliRunner().invoke(main, ["check", "owner/repo", "--save"])
+        # Assert
+        assert len(save_fn.calls) == 1
 
-    @patch("scitex_security.cli.save_alerts_to_file")
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_save_option_calls_save_function(self, mock_check, mock_format, mock_save):
-        mock_check.return_value = {"secrets": [], "dependabot": [], "code_scanning": []}
-        mock_format.return_value = "Report"
-        mock_save.return_value = Path("/tmp/security-test.txt")
+    def test_output_dir_option_forwarded_to_save(self):
+        # Arrange
+        check_fn = FakeAlertFn(return_value=_no_alerts())
+        fmt_fn = FakeFormatReport(return_value="Report")
+        save_fn = FakeSavePath(return_value=Path("/custom/dir/security.txt"))
+        # Act
+        with swap_attrs(
+            cli_module,
+            check_github_alerts=check_fn,
+            format_alerts_report=fmt_fn,
+            save_alerts_to_file=save_fn,
+        ):
+            CliRunner().invoke(
+                main,
+                ["check", "owner/repo", "--save", "--output-dir", "/custom/dir"],
+            )
+        # Assert — save_fn signature: (alerts, output_dir, create_symlink)
+        assert save_fn.calls[0][1] == Path("/custom/dir")
 
-        CliRunner().invoke(main, ["check", "owner/repo", "--save"])
-        mock_save.assert_called_once()
+    def test_github_security_error_exits_two(self):
+        # Arrange
+        check_fn = FakeAlertFn()
 
-    @patch("scitex_security.cli.save_alerts_to_file")
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_output_dir_passed_to_save(self, mock_check, mock_format, mock_save):
-        mock_check.return_value = {"secrets": [], "dependabot": [], "code_scanning": []}
-        mock_format.return_value = "Report"
-        mock_save.return_value = Path("/custom/dir/security.txt")
+        def _raise(repo=None):  # honest fake — matches FakeAlertFn shape
+            check_fn.calls.append(repo)
+            raise GitHubSecurityError("Auth failed")
 
-        CliRunner().invoke(
-            main, ["check", "owner/repo", "--save", "--output-dir", "/custom/dir"]
-        )
-        # save_alerts_to_file(alerts, out_path) — out_path is positional arg index 1
-        assert mock_save.call_args[0][1] == Path("/custom/dir")
-
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_github_security_error_exits_two(self, mock_check):
-        # cli.py exits 2 on GitHubSecurityError; old (argparse) test expected 1.
-        mock_check.side_effect = GitHubSecurityError("Auth failed")
-
-        result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Act
+        with swap_attrs(cli_module, check_github_alerts=_raise):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert result.exit_code == 2
+
+    def test_github_security_error_message_in_stderr(self):
+        # Arrange
+        def _raise(repo=None):
+            raise GitHubSecurityError("Auth failed")
+
+        # Act
+        with swap_attrs(cli_module, check_github_alerts=_raise):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert "Auth failed" in result.output
 
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_counts_multiple_alert_types(self, mock_check, mock_format):
-        mock_check.return_value = {
+    def test_counts_open_alerts_across_all_categories(self):
+        # Arrange
+        alerts = {
             "secrets": [{"state": "open"}],
             "dependabot": [{"state": "open"}, {"state": "open"}],
             "code_scanning": [{"state": "open"}],
         }
-        mock_format.return_value = "Report"
-
-        result = CliRunner().invoke(main, ["check", "owner/repo"])
-        assert result.exit_code == 1
+        check_fn = FakeAlertFn(return_value=alerts)
+        fmt_fn = FakeFormatReport(return_value="Report")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
+        ):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert "Found 4 open security alert" in result.output
 
-    @patch("scitex_security.cli.format_alerts_report")
-    @patch("scitex_security.cli.check_github_alerts")
-    def test_ignores_closed_alerts(self, mock_check, mock_format):
-        mock_check.return_value = {
+    def test_closed_alerts_yield_zero_exit_code(self):
+        # Arrange
+        alerts = {
             "secrets": [{"state": "closed"}],
             "dependabot": [{"state": "dismissed"}],
             "code_scanning": [],
         }
-        mock_format.return_value = "Report"
-
-        result = CliRunner().invoke(main, ["check", "owner/repo"])
+        check_fn = FakeAlertFn(return_value=alerts)
+        fmt_fn = FakeFormatReport(return_value="Report")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
+        ):
+            result = CliRunner().invoke(main, ["check", "owner/repo"])
+        # Assert
         assert result.exit_code == 0
 
-    def test_dot_repo_translates_to_none(self):
-        with (
-            patch("scitex_security.cli.check_github_alerts") as mock_check,
-            patch("scitex_security.cli.format_alerts_report") as mock_format,
+    def test_dot_repo_translates_to_none_argument(self):
+        # Arrange
+        check_fn = FakeAlertFn(return_value=_no_alerts())
+        fmt_fn = FakeFormatReport(return_value="ok")
+        # Act
+        with swap_attrs(
+            cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            mock_check.return_value = {
-                "secrets": [],
-                "dependabot": [],
-                "code_scanning": [],
-            }
-            mock_format.return_value = "ok"
-
             CliRunner().invoke(main, ["check", "."])
-            mock_check.assert_called_once_with(None)
+        # Assert
+        assert check_fn.calls == [None]
 
 
-# --- show-latest ----------------------------------------------------------
+# ---------------------------------------------------------------------------
+# main show-latest ...
+# ---------------------------------------------------------------------------
 
 
-class TestLatestCommand:
-    @patch("scitex_security.cli.get_latest_alerts_file")
-    def test_displays_file_content(self, mock_get_latest, tmp_path):
+class TestShowLatestCommand:
+    """Tests for the ``show-latest`` subcommand."""
+
+    def test_displays_content_of_latest_file(self, tmp_path):
+        # Arrange
         test_file = tmp_path / "security-latest.txt"
         test_file.write_text("Security Report Content")
-        mock_get_latest.return_value = test_file
-
-        result = CliRunner().invoke(
-            main, ["show-latest", "--security-dir", str(tmp_path)]
-        )
-        assert result.exit_code == 0
+        latest_fn = FakeLatestPath(return_value=test_file)
+        # Act
+        with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
+            result = CliRunner().invoke(
+                main, ["show-latest", "--security-dir", str(tmp_path)]
+            )
+        # Assert
         assert "Security Report Content" in result.output
 
-    @patch("scitex_security.cli.get_latest_alerts_file")
-    def test_no_file_exits_one(self, mock_get_latest):
-        mock_get_latest.return_value = None
-
-        result = CliRunner().invoke(main, ["show-latest"])
+    def test_missing_file_exits_one(self):
+        # Arrange
+        latest_fn = FakeLatestPath(return_value=None)
+        # Act
+        with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
+            result = CliRunner().invoke(main, ["show-latest"])
+        # Assert
         assert result.exit_code == 1
 
-    @patch("scitex_security.cli.get_latest_alerts_file")
-    def test_passes_security_dir(self, mock_get_latest, tmp_path):
-        mock_get_latest.return_value = None
+    def test_security_dir_option_forwarded_to_lookup(self, tmp_path):
+        # Arrange
+        latest_fn = FakeLatestPath(return_value=None)
+        # Act
+        with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
+            CliRunner().invoke(
+                main, ["show-latest", "--security-dir", str(tmp_path)]
+            )
+        # Assert
+        assert latest_fn.calls == [Path(str(tmp_path))]
 
-        CliRunner().invoke(main, ["show-latest", "--security-dir", str(tmp_path)])
-        mock_get_latest.assert_called_once_with(Path(str(tmp_path)))
-
-    @patch("scitex_security.cli.get_latest_alerts_file")
-    def test_exception_exits_two(self, mock_get_latest):
-        # cli.py exits 2 on generic exceptions; old (argparse) test expected 1.
-        mock_get_latest.side_effect = Exception("File error")
-
-        result = CliRunner().invoke(main, ["show-latest"])
+    def test_unexpected_exception_exits_two(self):
+        # Arrange
+        latest_fn = FakeLatestPath(side_effect=Exception("File error"))
+        # Act
+        with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
+            result = CliRunner().invoke(main, ["show-latest"])
+        # Assert
         assert result.exit_code == 2
 
 
-# --- main (root group) ----------------------------------------------------
+# ---------------------------------------------------------------------------
+# main (root group)
+# ---------------------------------------------------------------------------
 
 
-class TestMain:
-    def test_no_command_prints_help(self):
-        # Root group is invoke_without_command=True, prints help, exit 0.
-        result = CliRunner().invoke(main, [])
+class TestMainGroup:
+    """Tests for the root ``main`` Click group."""
+
+    def test_no_subcommand_exits_zero_after_help(self):
+        # Arrange
+        runner = CliRunner()
+        # Act
+        result = runner.invoke(main, [])
+        # Assert
         assert result.exit_code == 0
+
+    def test_no_subcommand_help_mentions_program_name(self):
+        # Arrange
+        runner = CliRunner()
+        # Act
+        result = runner.invoke(main, [])
+        # Assert
         assert "scitex-security" in result.output
 
-    def test_help_recursive_flag(self):
-        result = CliRunner().invoke(main, ["--help-recursive"])
+    def test_help_recursive_flag_exits_zero(self):
+        # Arrange
+        runner = CliRunner()
+        # Act
+        result = runner.invoke(main, ["--help-recursive"])
+        # Assert
         assert result.exit_code == 0
+
+    def test_help_recursive_includes_check_subcommand(self):
+        # Arrange
+        runner = CliRunner()
+        # Act
+        result = runner.invoke(main, ["--help-recursive"])
+        # Assert
         assert "check" in result.output
+
+    def test_help_recursive_includes_show_latest_subcommand(self):
+        # Arrange
+        runner = CliRunner()
+        # Act
+        result = runner.invoke(main, ["--help-recursive"])
+        # Assert
         assert "show-latest" in result.output
 
 
 if __name__ == "__main__":
     import os
-
-    import pytest
 
     pytest.main([os.path.abspath(__file__)])

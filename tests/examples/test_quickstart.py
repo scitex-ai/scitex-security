@@ -7,10 +7,24 @@ from pathlib import Path
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "quickstart.py"
 
 
-def test_quickstart_compiles():
-    assert EXAMPLE.is_file(), f"missing example: {EXAMPLE}"
-    py_compile.compile(str(EXAMPLE), doraise=True)
+def test_quickstart_example_file_exists_on_disk():
+    # Arrange
+    expected_path = EXAMPLE
+    # Act
+    is_file = expected_path.is_file()
+    # Assert
+    assert is_file, f"missing example: {expected_path}"
+
+
+def test_quickstart_example_compiles_without_syntax_errors():
+    # Arrange
+    source_path = str(EXAMPLE)
+    # Act
+    compiled = py_compile.compile(source_path, doraise=True)
+    # Assert
+    assert compiled is not None
 
 
 if __name__ == "__main__":
-    test_quickstart_compiles()
+    test_quickstart_example_file_exists_on_disk()
+    test_quickstart_example_compiles_without_syntax_errors()

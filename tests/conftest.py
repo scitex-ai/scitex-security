@@ -13,10 +13,20 @@ Force-set, not setdefault.
 from __future__ import annotations
 
 import os
+import sys
 import sysconfig
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_TESTS_ROOT = Path(__file__).resolve().parent
+
+# Make ``tests/_helpers.py`` importable as ``from _helpers import ...``
+# from any test module under ``tests/``. Tests sit in directories
+# without ``__init__.py`` (rootdir mode), so pytest only adds each
+# test's own directory to ``sys.path`` — we must add the shared
+# ``tests/`` directory explicitly.
+if str(_TESTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_TESTS_ROOT))
 
 # Pin coverage's data file at the repo root and point process_startup
 # at our pyproject so child interpreters configure themselves correctly.
