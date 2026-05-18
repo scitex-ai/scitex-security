@@ -6,13 +6,22 @@
 GitHub Security Alerts Module
 
 Fetches and processes security alerts from GitHub.
+
+Collaborator injection
+----------------------
+Per the SciTeX no-mocks rule (PA-306), the production callables that
+talk to external collaborators (the ``subprocess`` module, and the
+in-module ``_run_gh_command``/``check_gh_auth``/``get_*_alerts``
+helpers) accept keyword-only overrides defaulting to the real module
+globals. Tests pass real hand-rolled fakes; production code does not
+pass anything.
 """
 
 import json
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class GitHubSecurityError(Exception):
@@ -21,10 +30,22 @@ class GitHubSecurityError(Exception):
     pass
 
 
-def _run_gh_command(args: List[str]) -> str:
-    """Run GitHub CLI command and return output."""
+def _run_gh_command(
+    args: List[str],
+    *,
+    run: Optional[Callable] = None,
+) -> str:
+    """Run GitHub CLI command and return output.
+
+    Args:
+        args: Arguments to pass to ``gh`` (without the ``gh`` prefix).
+        run: ``subprocess.run``-shaped callable. Defaults to the real
+            ``subprocess.run``. Override in tests.
+    """
+    if run is None:
+        run = subprocess.run
     try:
-        result = subprocess.run(
+        result = run(
             ["gh"] + args,
             capture_output=True,
             text=True,
@@ -39,10 +60,17 @@ def _run_gh_command(args: List[str]) -> str:
         )
 
 
-def check_gh_auth() -> bool:
-    """Check if GitHub CLI is authenticated."""
+def check_gh_auth(*, run: Optional[Callable] = None) -> bool:
+    """Check if GitHub CLI is authenticated.
+
+    Args:
+        run: ``subprocess.run``-shaped callable. Defaults to the real
+            ``subprocess.run``. Override in tests.
+    """
+    if run is None:
+        run = subprocess.run
     try:
-        subprocess.run(
+        run(
             ["gh", "auth", "status"],
             capture_output=True,
             check=True,
@@ -52,16 +80,24 @@ def check_gh_auth() -> bool:
         return False
 
 
-def get_secret_alerts(repo: Optional[str] = None) -> List[Dict]:
+def get_secret_alerts(
+    repo: Optional[str] = None,
+    *,
+    gh_runner: Optional[Callable[[List[str]], str]] = None,
+) -> List[Dict]:
     """
     Get secret scanning alerts.
 
     Args:
         repo: Repository in format 'owner/repo'. If None, uses current repo.
+        gh_runner: ``_run_gh_command``-shaped callable. Defaults to
+            :func:`_run_gh_command`. Override in tests.
 
     Returns:
         List of secret scanning alerts
     """
+    if gh_runner is None:
+        gh_runner = _run_gh_command
     try:
         # Use GitHub REST API for secret scanning
         api_path = "/repos/:owner/:repo/secret-scanning/alerts"
@@ -69,7 +105,7 @@ def get_secret_alerts(repo: Optional[str] = None) -> List[Dict]:
             owner, repo_name = repo.split("/")
             api_path = f"/repos/{owner}/{repo_name}/secret-scanning/alerts"
 
-        output = _run_gh_command(
+        output = gh_runner(
             [
                 "api",
                 api_path,
@@ -96,16 +132,24 @@ def get_secret_alerts(repo: Optional[str] = None) -> List[Dict]:
         return []
 
 
-def get_dependabot_alerts(repo: Optional[str] = None) -> List[Dict]:
+def get_dependabot_alerts(
+    repo: Optional[str] = None,
+    *,
+    gh_runner: Optional[Callable[[List[str]], str]] = None,
+) -> List[Dict]:
     """
     Get Dependabot vulnerability alerts.
 
     Args:
         repo: Repository in format 'owner/repo'. If None, uses current repo.
+        gh_runner: ``_run_gh_command``-shaped callable. Defaults to
+            :func:`_run_gh_command`. Override in tests.
 
     Returns:
         List of Dependabot alerts
     """
+    if gh_runner is None:
+        gh_runner = _run_gh_command
     try:
         # Use GitHub API to get Dependabot alerts
         api_path = "/repos/:owner/:repo/dependabot/alerts"
@@ -113,7 +157,7 @@ def get_dependabot_alerts(repo: Optional[str] = None) -> List[Dict]:
             owner, repo_name = repo.split("/")
             api_path = f"/repos/{owner}/{repo_name}/dependabot/alerts"
 
-        output = _run_gh_command(
+        output = gh_runner(
             [
                 "api",
                 api_path,
@@ -141,16 +185,24 @@ def get_dependabot_alerts(repo: Optional[str] = None) -> List[Dict]:
         return []
 
 
-def get_code_scanning_alerts(repo: Optional[str] = None) -> List[Dict]:
+def get_code_scanning_alerts(
+    repo: Optional[str] = None,
+    *,
+    gh_runner: Optional[Callable[[List[str]], str]] = None,
+) -> List[Dict]:
     """
     Get code scanning alerts.
 
     Args:
         repo: Repository in format 'owner/repo'. If None, uses current repo.
+        gh_runner: ``_run_gh_command``-shaped callable. Defaults to
+            :func:`_run_gh_command`. Override in tests.
 
     Returns:
         List of code scanning alerts
     """
+    if gh_runner is None:
+        gh_runner = _run_gh_command
     try:
         # Use GitHub API to get code scanning alerts
         api_path = "/repos/:owner/:repo/code-scanning/alerts"
@@ -158,7 +210,7 @@ def get_code_scanning_alerts(repo: Optional[str] = None) -> List[Dict]:
             owner, repo_name = repo.split("/")
             api_path = f"/repos/{owner}/{repo_name}/code-scanning/alerts"
 
-        output = _run_gh_command(
+        output = gh_runner(
             [
                 "api",
                 api_path,
@@ -186,12 +238,25 @@ def get_code_scanning_alerts(repo: Optional[str] = None) -> List[Dict]:
         return []
 
 
-def check_github_alerts(repo: Optional[str] = None) -> Dict[str, List[Dict]]:
+def check_github_alerts(
+    repo: Optional[str] = None,
+    *,
+    auth_check: Optional[Callable[[], bool]] = None,
+    secrets_fn: Optional[Callable] = None,
+    dependabot_fn: Optional[Callable] = None,
+    code_scanning_fn: Optional[Callable] = None,
+) -> Dict[str, List[Dict]]:
     """
     Check all GitHub security alerts.
 
     Args:
         repo: Repository in format 'owner/repo'. If None, uses current repo.
+        auth_check: ``check_gh_auth``-shaped callable. Override in tests.
+        secrets_fn: ``get_secret_alerts``-shaped callable. Override in tests.
+        dependabot_fn: ``get_dependabot_alerts``-shaped callable. Override in
+            tests.
+        code_scanning_fn: ``get_code_scanning_alerts``-shaped callable.
+            Override in tests.
 
     Returns:
         Dictionary with keys: 'secrets', 'dependabot', 'code_scanning'
@@ -199,15 +264,24 @@ def check_github_alerts(repo: Optional[str] = None) -> Dict[str, List[Dict]]:
     Raises:
         GitHubSecurityError: If GitHub CLI is not installed or not authenticated
     """
-    if not check_gh_auth():
+    if auth_check is None:
+        auth_check = check_gh_auth
+    if secrets_fn is None:
+        secrets_fn = get_secret_alerts
+    if dependabot_fn is None:
+        dependabot_fn = get_dependabot_alerts
+    if code_scanning_fn is None:
+        code_scanning_fn = get_code_scanning_alerts
+
+    if not auth_check():
         raise GitHubSecurityError(
             "Not authenticated with GitHub CLI. Run: gh auth login"
         )
 
     return {
-        "secrets": get_secret_alerts(repo),
-        "dependabot": get_dependabot_alerts(repo),
-        "code_scanning": get_code_scanning_alerts(repo),
+        "secrets": secrets_fn(repo),
+        "dependabot": dependabot_fn(repo),
+        "code_scanning": code_scanning_fn(repo),
     }
 
 

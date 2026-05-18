@@ -8,5 +8,10 @@ CROSS_PACKAGE_IMPORTS = [
 
 
 @pytest.mark.parametrize("module_path", CROSS_PACKAGE_IMPORTS)
-def test_cross_package_import(module_path: str) -> None:
-    pytest.importorskip(module_path)
+def test_cross_package_import_module_loads_successfully(module_path: str) -> None:
+    # Arrange
+    target = module_path
+    # Act
+    module = pytest.importorskip(target)
+    # Assert
+    assert module is not None
