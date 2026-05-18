@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-security"
-version = "0.1.2"
+version = "0.1.3"
 description = "GitHub security alerts checker (Dependabot, secret scanning, code scanning) — standalone module from the SciTeX ecosystem"
 readme = "README.md"
 license = "AGPL-3.0-only"
