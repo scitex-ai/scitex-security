@@ -83,13 +83,22 @@
 <span class="sd">GitHub Security Alerts Module</span>
 
 <span class="sd">Fetches and processes security alerts from GitHub.</span>
+
+<span class="sd">Collaborator injection</span>
+<span class="sd">----------------------</span>
+<span class="sd">Per the SciTeX no-mocks rule (PA-306), the production callables that</span>
+<span class="sd">talk to external collaborators (the ``subprocess`` module, and the</span>
+<span class="sd">in-module ``_run_gh_command``/``check_gh_auth``/``get_*_alerts``</span>
+<span class="sd">helpers) accept keyword-only overrides defaulting to the real module</span>
+<span class="sd">globals. Tests pass real hand-rolled fakes; production code does not</span>
+<span class="sd">pass anything.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 
 <div class="viewcode-block" id="GitHubSecurityError">
@@ -101,10 +110,22 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_run_gh_command</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run GitHub CLI command and return output.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_gh_command</span><span class="p">(</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run GitHub CLI command and return output.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        args: Arguments to pass to ``gh`` (without the ``gh`` prefix).</span>
+<span class="sd">        run: ``subprocess.run``-shaped callable. Defaults to the real</span>
+<span class="sd">            ``subprocess.run``. Override in tests.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span>
             <span class="p">[</span><span class="s2">&quot;gh&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">args</span><span class="p">,</span>
             <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -121,10 +142,17 @@
 
 <div class="viewcode-block" id="check_gh_auth">
 <a class="viewcode-back" href="../../api/scitex_security.github.html#scitex_security.check_gh_auth">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">check_gh_auth</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if GitHub CLI is authenticated.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_gh_auth</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if GitHub CLI is authenticated.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        run: ``subprocess.run``-shaped callable. Defaults to the real</span>
+<span class="sd">            ``subprocess.run``. Override in tests.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="n">run</span><span class="p">(</span>
             <span class="p">[</span><span class="s2">&quot;gh&quot;</span><span class="p">,</span> <span class="s2">&quot;auth&quot;</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">],</span>
             <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -137,16 +165,24 @@
 
 <div class="viewcode-block" id="get_secret_alerts">
 <a class="viewcode-back" href="../../api/scitex_security.github.html#scitex_security.get_secret_alerts">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_secret_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_secret_alerts</span><span class="p">(</span>
+    <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">gh_runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get secret scanning alerts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        repo: Repository in format &#39;owner/repo&#39;. If None, uses current repo.</span>
+<span class="sd">        gh_runner: ``_run_gh_command``-shaped callable. Defaults to</span>
+<span class="sd">            :func:`_run_gh_command`. Override in tests.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of secret scanning alerts</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gh_runner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">gh_runner</span> <span class="o">=</span> <span class="n">_run_gh_command</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Use GitHub REST API for secret scanning</span>
         <span class="n">api_path</span> <span class="o">=</span> <span class="s2">&quot;/repos/:owner/:repo/secret-scanning/alerts&quot;</span>
@@ -154,7 +190,7 @@
             <span class="n">owner</span><span class="p">,</span> <span class="n">repo_name</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
             <span class="n">api_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">/secret-scanning/alerts&quot;</span>
 
-        <span class="n">output</span> <span class="o">=</span> <span class="n">_run_gh_command</span><span class="p">(</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">gh_runner</span><span class="p">(</span>
             <span class="p">[</span>
                 <span class="s2">&quot;api&quot;</span><span class="p">,</span>
                 <span class="n">api_path</span><span class="p">,</span>
@@ -184,16 +220,24 @@
 
 <div class="viewcode-block" id="get_dependabot_alerts">
 <a class="viewcode-back" href="../../api/scitex_security.github.html#scitex_security.get_dependabot_alerts">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_dependabot_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dependabot_alerts</span><span class="p">(</span>
+    <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">gh_runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get Dependabot vulnerability alerts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        repo: Repository in format &#39;owner/repo&#39;. If None, uses current repo.</span>
+<span class="sd">        gh_runner: ``_run_gh_command``-shaped callable. Defaults to</span>
+<span class="sd">            :func:`_run_gh_command`. Override in tests.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of Dependabot alerts</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gh_runner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">gh_runner</span> <span class="o">=</span> <span class="n">_run_gh_command</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Use GitHub API to get Dependabot alerts</span>
         <span class="n">api_path</span> <span class="o">=</span> <span class="s2">&quot;/repos/:owner/:repo/dependabot/alerts&quot;</span>
@@ -201,7 +245,7 @@
             <span class="n">owner</span><span class="p">,</span> <span class="n">repo_name</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
             <span class="n">api_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">/dependabot/alerts&quot;</span>
 
-        <span class="n">output</span> <span class="o">=</span> <span class="n">_run_gh_command</span><span class="p">(</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">gh_runner</span><span class="p">(</span>
             <span class="p">[</span>
                 <span class="s2">&quot;api&quot;</span><span class="p">,</span>
                 <span class="n">api_path</span><span class="p">,</span>
@@ -232,16 +276,24 @@
 
 <div class="viewcode-block" id="get_code_scanning_alerts">
 <a class="viewcode-back" href="../../api/scitex_security.github.html#scitex_security.get_code_scanning_alerts">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_code_scanning_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_code_scanning_alerts</span><span class="p">(</span>
+    <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">gh_runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get code scanning alerts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        repo: Repository in format &#39;owner/repo&#39;. If None, uses current repo.</span>
+<span class="sd">        gh_runner: ``_run_gh_command``-shaped callable. Defaults to</span>
+<span class="sd">            :func:`_run_gh_command`. Override in tests.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of code scanning alerts</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gh_runner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">gh_runner</span> <span class="o">=</span> <span class="n">_run_gh_command</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Use GitHub API to get code scanning alerts</span>
         <span class="n">api_path</span> <span class="o">=</span> <span class="s2">&quot;/repos/:owner/:repo/code-scanning/alerts&quot;</span>
@@ -249,7 +301,7 @@
             <span class="n">owner</span><span class="p">,</span> <span class="n">repo_name</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
             <span class="n">api_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;/repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">/code-scanning/alerts&quot;</span>
 
-        <span class="n">output</span> <span class="o">=</span> <span class="n">_run_gh_command</span><span class="p">(</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">gh_runner</span><span class="p">(</span>
             <span class="p">[</span>
                 <span class="s2">&quot;api&quot;</span><span class="p">,</span>
                 <span class="n">api_path</span><span class="p">,</span>
@@ -280,12 +332,25 @@
 
 <div class="viewcode-block" id="check_github_alerts">
 <a class="viewcode-back" href="../../api/scitex_security.github.html#scitex_security.check_github_alerts">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">check_github_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_github_alerts</span><span class="p">(</span>
+    <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">auth_check</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">secrets_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dependabot_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">code_scanning_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check all GitHub security alerts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        repo: Repository in format &#39;owner/repo&#39;. If None, uses current repo.</span>
+<span class="sd">        auth_check: ``check_gh_auth``-shaped callable. Override in tests.</span>
+<span class="sd">        secrets_fn: ``get_secret_alerts``-shaped callable. Override in tests.</span>
+<span class="sd">        dependabot_fn: ``get_dependabot_alerts``-shaped callable. Override in</span>
+<span class="sd">            tests.</span>
+<span class="sd">        code_scanning_fn: ``get_code_scanning_alerts``-shaped callable.</span>
+<span class="sd">            Override in tests.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Dictionary with keys: &#39;secrets&#39;, &#39;dependabot&#39;, &#39;code_scanning&#39;</span>
@@ -293,15 +358,24 @@
 <span class="sd">    Raises:</span>
 <span class="sd">        GitHubSecurityError: If GitHub CLI is not installed or not authenticated</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_gh_auth</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">auth_check</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">auth_check</span> <span class="o">=</span> <span class="n">check_gh_auth</span>
+    <span class="k">if</span> <span class="n">secrets_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">secrets_fn</span> <span class="o">=</span> <span class="n">get_secret_alerts</span>
+    <span class="k">if</span> <span class="n">dependabot_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dependabot_fn</span> <span class="o">=</span> <span class="n">get_dependabot_alerts</span>
+    <span class="k">if</span> <span class="n">code_scanning_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">code_scanning_fn</span> <span class="o">=</span> <span class="n">get_code_scanning_alerts</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">auth_check</span><span class="p">():</span>
         <span class="k">raise</span> <span class="n">GitHubSecurityError</span><span class="p">(</span>
             <span class="s2">&quot;Not authenticated with GitHub CLI. Run: gh auth login&quot;</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;secrets&quot;</span><span class="p">:</span> <span class="n">get_secret_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">),</span>
-        <span class="s2">&quot;dependabot&quot;</span><span class="p">:</span> <span class="n">get_dependabot_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">),</span>
-        <span class="s2">&quot;code_scanning&quot;</span><span class="p">:</span> <span class="n">get_code_scanning_alerts</span><span class="p">(</span><span class="n">repo</span><span class="p">),</span>
+        <span class="s2">&quot;secrets&quot;</span><span class="p">:</span> <span class="n">secrets_fn</span><span class="p">(</span><span class="n">repo</span><span class="p">),</span>
+        <span class="s2">&quot;dependabot&quot;</span><span class="p">:</span> <span class="n">dependabot_fn</span><span class="p">(</span><span class="n">repo</span><span class="p">),</span>
+        <span class="s2">&quot;code_scanning&quot;</span><span class="p">:</span> <span class="n">code_scanning_fn</span><span class="p">(</span><span class="n">repo</span><span class="p">),</span>
     <span class="p">}</span></div>
 
 
