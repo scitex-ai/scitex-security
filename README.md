@@ -51,7 +51,7 @@ Runtime flow:
   gh api repos/<owner>/<repo>/{dependabot,secret-scanning,code-scanning}/alerts
         │
         ▼
-  format_alerts_report() → save_alerts_to_file(.scitex/security/)
+  format_alerts_report() → save_alerts_to_file(.scitex/security/runtime/)
 ```
 
 `scitex-security` shells out to `gh` (GitHub CLI) and never touches
@@ -75,7 +75,7 @@ from scitex_security import (
 
 alerts = check_github_alerts(repo="ywatanabe1989/myrepo")
 print(format_alerts_report(alerts))
-save_alerts_to_file(alerts, output_dir=".scitex/security")
+save_alerts_to_file(alerts, output_dir=".scitex/security/runtime")
 ```
 
 </details>
@@ -87,7 +87,7 @@ save_alerts_to_file(alerts, output_dir=".scitex/security")
 
 ```bash
 scitex-security check ywatanabe1989/myrepo
-scitex-security show-latest --security-dir ./logs/security
+scitex-security show-latest --security-dir ~/.scitex/security/runtime
 ```
 
 </details>
@@ -107,7 +107,7 @@ flowchart LR
     code --> report
     report --> stdout[("terminal report")]
     report --> save["save_alerts_to_file()"]
-    save --> json[(".scitex/security/<ts>.json")]
+    save --> json[(".scitex/security/runtime/<ts>.txt")]
 ```
 
 ## Quick Start
@@ -119,9 +119,12 @@ See the Python API block above for the minimal end-to-end example.
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `SCITEX_SECURITY_CONFIG` | Path to a YAML config file (overrides `~/.scitex/security/config.yaml`). | unset |
+| `SCITEX_SECURITY_DIR` | Override the alerts output directory (overrides project/user scope). | unset (uses `<project>/.scitex/security/runtime/` or `~/.scitex/security/runtime/`) |
+| `SCITEX_DIR` | Relocate the user-scope root (e.g. `/mnt/fast-ssd/scitex`). | `~/.scitex` |
 | `GH_TOKEN` / `GITHUB_TOKEN` | Auth token used by the underlying `gh` CLI subprocess. | unset |
 
 Config precedence: explicit path → `$SCITEX_SECURITY_CONFIG` → `~/.scitex/security/config.yaml` → built-in defaults.
+Alert output precedence: `--output-dir` / `--security-dir` → `$SCITEX_SECURITY_DIR` → project scope → user scope (respects `$SCITEX_DIR`).
 
 ## Status
 

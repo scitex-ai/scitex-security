@@ -31,4 +31,4 @@ jobs:
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -e .
       - name: Import smoke
-        run: .venv/bin/python -c "import scitex_dev; print(scitex_dev.__version__)"
+        run: .venv/bin/python -c "import scitex_security; print(scitex_security.__version__)"
