@@ -23,6 +23,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
+from ._paths import _check_legacy_fallback_read, get_default_alerts_dir
+
 
 class GitHubSecurityError(Exception):
     """Raised when GitHub security operations fail."""
@@ -392,14 +394,16 @@ def save_alerts_to_file(
 
     Args:
         alerts: Dictionary of alerts from check_github_alerts()
-        output_dir: Directory to save file. Defaults to ./logs/security
+        output_dir: Directory to save file. Defaults to the
+            ``~/.scitex/security/runtime/`` (or project-scope equivalent
+            when inside a git repo, or ``$SCITEX_SECURITY_DIR``).
         create_symlink: If True, create 'security-latest.txt' symlink
 
     Returns:
         Path to saved file
     """
     if output_dir is None:
-        output_dir = Path.cwd() / "logs" / "security"
+        output_dir = get_default_alerts_dir()
     else:
         output_dir = Path(output_dir)
 
@@ -426,13 +430,18 @@ def get_latest_alerts_file(security_dir: Optional[Path] = None) -> Optional[Path
     Get path to the latest security alerts file.
 
     Args:
-        security_dir: Directory containing security files. Defaults to ./logs/security
+        security_dir: Directory containing security files. Defaults to the
+            ``~/.scitex/security/runtime/`` (or project-scope equivalent
+            when inside a git repo, or ``$SCITEX_SECURITY_DIR``).
 
     Returns:
         Path to latest file, or None if not found
     """
     if security_dir is None:
-        security_dir = Path.cwd() / "logs" / "security"
+        security_dir = get_default_alerts_dir()
+        legacy_fallback = _check_legacy_fallback_read(None)
+        if legacy_fallback is not None:
+            security_dir = legacy_fallback
     else:
         security_dir = Path(security_dir)
 
