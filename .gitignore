@@ -22,5 +22,11 @@ docs/sphinx/api/
 # Local SciTeX dev state — keep tracked the per-package audit config only.
 .scitex/*
 !.scitex/dev/
+!.scitex/security/
 .scitex/dev/*
+.scitex/security/*
 !.scitex/dev/config.yaml
+!.scitex/security/runtime/
+.scitex/security/runtime/*
+!.scitex/security/runtime/.gitkeep
+!.scitex/security/runtime/README.md
