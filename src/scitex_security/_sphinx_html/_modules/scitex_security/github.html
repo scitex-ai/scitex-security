@@ -100,6 +100,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">._paths</span><span class="w"> </span><span class="kn">import</span> <span class="n">_check_legacy_fallback_read</span><span class="p">,</span> <span class="n">get_default_alerts_dir</span>
+
 
 <div class="viewcode-block" id="GitHubSecurityError">
 <a class="viewcode-back" href="../../api/scitex_security.github.html#scitex_security.GitHubSecurityError">[docs]</a>
@@ -492,14 +494,16 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        alerts: Dictionary of alerts from check_github_alerts()</span>
-<span class="sd">        output_dir: Directory to save file. Defaults to ./logs/security</span>
+<span class="sd">        output_dir: Directory to save file. Defaults to the</span>
+<span class="sd">            ``~/.scitex/security/runtime/`` (or project-scope equivalent</span>
+<span class="sd">            when inside a git repo, or ``$SCITEX_SECURITY_DIR``).</span>
 <span class="sd">        create_symlink: If True, create &#39;security-latest.txt&#39; symlink</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Path to saved file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;logs&quot;</span> <span class="o">/</span> <span class="s2">&quot;security&quot;</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">get_default_alerts_dir</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
 
@@ -529,13 +533,18 @@
 <span class="sd">    Get path to the latest security alerts file.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        security_dir: Directory containing security files. Defaults to ./logs/security</span>
+<span class="sd">        security_dir: Directory containing security files. Defaults to the</span>
+<span class="sd">            ``~/.scitex/security/runtime/`` (or project-scope equivalent</span>
+<span class="sd">            when inside a git repo, or ``$SCITEX_SECURITY_DIR``).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Path to latest file, or None if not found</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">security_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">security_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;logs&quot;</span> <span class="o">/</span> <span class="s2">&quot;security&quot;</span>
+        <span class="n">security_dir</span> <span class="o">=</span> <span class="n">get_default_alerts_dir</span><span class="p">()</span>
+        <span class="n">legacy_fallback</span> <span class="o">=</span> <span class="n">_check_legacy_fallback_read</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">legacy_fallback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">security_dir</span> <span class="o">=</span> <span class="n">legacy_fallback</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">security_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">security_dir</span><span class="p">)</span>
 
