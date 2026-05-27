@@ -9,6 +9,8 @@ tags: [scitex-security-quick-start]
 # Quick Start
 
 ```python
-import scitex_security
-# TODO: smallest useful example
+from scitex_security import check_github_alerts, format_alerts_report
+
+alerts = check_github_alerts()           # auto-detect current repo
+print(format_alerts_report(alerts))      # formatted terminal output
 ```
