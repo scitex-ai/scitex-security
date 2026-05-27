@@ -1,10 +1,10 @@
 name: import-smoke
 
-# Catches "wheel installs but `import scitex_dev` blows up at runtime"
+# Catches "wheel installs but `import scitex_security` blows up at runtime"
 # — separate from the full pytest suite so a broken entry-point fails
 # fast without paying for the matrix. Companion to `tests` — confirms
 # the bare package (no extras) is `pip install -e .`-able and
-# `import scitex_dev` succeeds. Catches `[project] dependencies`
+# `import scitex_security` succeeds. Catches `[project] dependencies`
 # drift that the test matrix masks because it installs `[all,dev]`.
 
 on:
