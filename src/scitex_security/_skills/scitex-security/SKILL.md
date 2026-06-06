@@ -1,9 +1,9 @@
 ---
 name: scitex-security
 description: |
-  [WHAT] Security helpers for SciTeX scripts — secret loading, redaction in logs, and safe path handling.
-  [WHEN] Writing scripts that touch credentials, API keys, or user PII.
-  [HOW] `from scitex_security import ...` or `scitex-security --help`.
+  [WHAT] GitHub security-alert utilities — Dependabot, secret scanning, code scanning.
+  [WHEN] Checking for open security alerts on GitHub repos from a script or automation.
+  [HOW] `from scitex_security import check_github_alerts` or `scitex-security --help`.
 primary_interface: python
 interfaces:
   python: 2
@@ -34,3 +34,6 @@ signatures.
 - [02_quick-start.md](02_quick-start.md) — 30-second tour
 - [03_python-api.md](03_python-api.md) — Python API surface
 - [04_cli-reference.md](04_cli-reference.md) — CLI subcommands
+
+### Configuration (20–29)
+- [20_env-vars.md](20_env-vars.md) — environment variables

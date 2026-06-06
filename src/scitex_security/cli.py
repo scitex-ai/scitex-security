@@ -101,12 +101,14 @@ def main(ctx: click.Context, help_recursive: bool, as_json: bool) -> None:
 @main.command("check")
 @click.argument("repo", required=True)
 @click.option(
-    "--save", is_flag=True, help="Save the report to ./logs/security/<timestamp>.txt."
+    "--save",
+    is_flag=True,
+    help="Save the report to ~/.scitex/security/runtime/<timestamp>.txt.",
 )
 @click.option(
     "--output-dir",
     default=None,
-    help="Output directory for --save (default: ./logs/security).",
+    help="Output directory for --save (default: ~/.scitex/security/runtime/).",
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON instead of text.")
 @click.pass_context
@@ -173,7 +175,7 @@ def check_cmd(
 @click.option(
     "--security-dir",
     default=None,
-    help="Directory holding saved reports (default: ./logs/security).",
+    help="Directory holding saved reports (default: ~/.scitex/security/runtime/).",
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON instead of text.")
 @click.pass_context
@@ -185,7 +187,7 @@ def show_latest_cmd(
     \b
     Example:
       $ scitex-security show-latest
-      $ scitex-security show-latest --security-dir ./logs/security
+      $ scitex-security show-latest --security-dir ~/.scitex/security/runtime
       $ scitex-security show-latest --json
     """
     as_json = as_json or bool(ctx.obj.get("as_json"))

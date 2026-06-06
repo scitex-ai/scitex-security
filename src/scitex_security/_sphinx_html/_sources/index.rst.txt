@@ -1,8 +1,8 @@
 scitex-security
-=============
+===============
 
-Small linear-algebra helpers (distance, geometric median, cosine, nannorm)
-extracted from the SciTeX ecosystem as a standalone package.
+GitHub security-alert utilities — Dependabot, secret scanning, code scanning.
+Standalone package from the SciTeX ecosystem.  Zero ``scitex.*`` runtime deps.
 
 .. toctree::
    :maxdepth: 2

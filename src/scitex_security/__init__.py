@@ -4,7 +4,8 @@
 
 """scitex-security — GitHub security-alert utilities (standalone).
 
-Usage:
+Usage::
+
     from scitex_security import check_github_alerts
 
     alerts = check_github_alerts()
@@ -15,7 +16,9 @@ Usage:
 from __future__ import annotations
 
 try:
-    from importlib.metadata import version as _v, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _v
+
     try:
         __version__ = _v("scitex-security")
     except PackageNotFoundError:
