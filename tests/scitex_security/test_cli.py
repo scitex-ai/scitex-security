@@ -48,7 +48,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert result.exit_code == 0
 
@@ -65,7 +65,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert result.exit_code == 1
 
@@ -82,7 +82,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert "Found 1 open security alert" in result.output
 
@@ -94,7 +94,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            CliRunner().invoke(main, ["check", "owner/repo"])
+            CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert check_fn.calls == ["owner/repo"]
 
@@ -110,7 +110,7 @@ class TestCheckCommand:
             format_alerts_report=fmt_fn,
             save_alerts_to_file=save_fn,
         ):
-            CliRunner().invoke(main, ["check", "owner/repo", "--save"])
+            CliRunner().invoke(main, ["github", "check", "owner/repo", "--save"])
         # Assert
         assert len(save_fn.calls) == 1
 
@@ -128,7 +128,7 @@ class TestCheckCommand:
         ):
             CliRunner().invoke(
                 main,
-                ["check", "owner/repo", "--save", "--output-dir", "/custom/dir"],
+                ["github", "check", "owner/repo", "--save", "--output-dir", "/custom/dir"],
             )
         # Assert — save_fn signature: (alerts, output_dir, create_symlink)
         assert save_fn.calls[0][1] == Path("/custom/dir")
@@ -143,7 +143,7 @@ class TestCheckCommand:
 
         # Act
         with swap_attrs(cli_module, check_github_alerts=_raise):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert result.exit_code == 2
 
@@ -154,7 +154,7 @@ class TestCheckCommand:
 
         # Act
         with swap_attrs(cli_module, check_github_alerts=_raise):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert "Auth failed" in result.output
 
@@ -171,7 +171,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert "Found 4 open security alert" in result.output
 
@@ -188,7 +188,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            result = CliRunner().invoke(main, ["check", "owner/repo"])
+            result = CliRunner().invoke(main, ["github", "check", "owner/repo"])
         # Assert
         assert result.exit_code == 0
 
@@ -200,7 +200,7 @@ class TestCheckCommand:
         with swap_attrs(
             cli_module, check_github_alerts=check_fn, format_alerts_report=fmt_fn
         ):
-            CliRunner().invoke(main, ["check", "."])
+            CliRunner().invoke(main, ["github", "check", "."])
         # Assert
         assert check_fn.calls == [None]
 
@@ -221,7 +221,7 @@ class TestShowLatestCommand:
         # Act
         with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
             result = CliRunner().invoke(
-                main, ["show-latest", "--security-dir", str(tmp_path)]
+                main, ["github", "show-latest", "--security-dir", str(tmp_path)]
             )
         # Assert
         assert "Security Report Content" in result.output
@@ -231,7 +231,7 @@ class TestShowLatestCommand:
         latest_fn = FakeLatestPath(return_value=None)
         # Act
         with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
-            result = CliRunner().invoke(main, ["show-latest"])
+            result = CliRunner().invoke(main, ["github", "show-latest"])
         # Assert
         assert result.exit_code == 1
 
@@ -241,7 +241,7 @@ class TestShowLatestCommand:
         # Act
         with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
             CliRunner().invoke(
-                main, ["show-latest", "--security-dir", str(tmp_path)]
+                main, ["github", "show-latest", "--security-dir", str(tmp_path)]
             )
         # Assert
         assert latest_fn.calls == [Path(str(tmp_path))]
@@ -251,7 +251,7 @@ class TestShowLatestCommand:
         latest_fn = FakeLatestPath(side_effect=Exception("File error"))
         # Act
         with swap_attrs(cli_module, get_latest_alerts_file=latest_fn):
-            result = CliRunner().invoke(main, ["show-latest"])
+            result = CliRunner().invoke(main, ["github", "show-latest"])
         # Assert
         assert result.exit_code == 2
 
