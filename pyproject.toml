@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-security"
-version = "0.1.4"
-description = "GitHub security alerts checker (Dependabot, secret scanning, code scanning) — standalone module from the SciTeX ecosystem"
+version = "0.2.0"
+description = "Unified security scanning for the SciTeX ecosystem: bandit + shellcheck + pip-audit + GitHub alerts (Dependabot, secret scanning, code scanning) in one orchestrator"
 readme = "README.md"
 license = "AGPL-3.0-only"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{name = "Yusuke Watanabe", email = "ywatanabe@scitex.ai"}]
-keywords = ["scitex", "security", "github", "dependabot", "secret-scanning"]
+keywords = ["scitex", "security", "audit", "bandit", "shellcheck", "pip-audit", "github", "dependabot", "secret-scanning"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -67,7 +67,7 @@ source = ["scitex_security"]
 concurrency = ["multiprocessing", "thread"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
