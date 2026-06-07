@@ -106,7 +106,11 @@ def main(ctx: click.Context, help_recursive: bool, as_json: bool) -> None:
 
 
 @main.command("check")
-@click.argument("path", type=click.Path(exists=True, file_okay=False), default=".")
+@click.argument(
+    "path",
+    type=click.Path(exists=True, file_okay=False),
+    required=True,
+)
 @click.option(
     "--checks",
     multiple=True,
@@ -135,11 +139,12 @@ def check_cmd(
     GitHub-alerts checker. Skips checks whose backing tool isn't
     installed.
 
-    PATH defaults to the current directory.
+    PATH is the target directory (typically ``.`` for the cwd). The
+    explicit argument is required per the ecosystem audit-cli §1
+    convention (a verb's object is always explicit, never implicit).
 
     \b
     Example:
-      $ scitex-security check
       $ scitex-security check .
       $ scitex-security check src/
       $ scitex-security check . --checks python --checks shell
