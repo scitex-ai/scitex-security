@@ -15,15 +15,14 @@ from __future__ import annotations
 
 
 def test_top_level_audit_is_importable():
-    """``from scitex_security import audit`` resolves."""
+    """``from scitex_security import audit`` resolves to a callable."""
     # Arrange
     import scitex_security
 
     # Act
-    has_attr = hasattr(scitex_security, "audit")
+    obj = getattr(scitex_security, "audit", None)
     # Assert
-    assert callable(getattr(scitex_security, "audit"))
-    assert has_attr
+    assert callable(obj)
 
 
 def test_audit_in_package_all():
@@ -130,10 +129,12 @@ def test_reverse_migration_noops_when_legacy_audit_dir_absent(tmp_path):
     try:
         # Act
         _migrate_legacy_audit_dir()  # tmp_path is empty → no legacy dir
-        # Assert
-        assert not (tmp_path / "security").exists() or not any(
-            (tmp_path / "security").iterdir()
+        security_root = tmp_path / "security"
+        absent_or_empty = (not security_root.exists()) or (
+            not any(security_root.iterdir())
         )
+        # Assert
+        assert absent_or_empty
     finally:
         if saved_scitex_dir is None:
             os.environ.pop("SCITEX_DIR", None)
@@ -141,8 +142,8 @@ def test_reverse_migration_noops_when_legacy_audit_dir_absent(tmp_path):
             os.environ["SCITEX_DIR"] = saved_scitex_dir
 
 
-def test_audit_runner_skips_unavailable_tools(tmp_path):
-    """``audit(.)`` returns a results dict and skips unavailable checks.
+def test_audit_runner_returns_dict_keyed_by_check(tmp_path):
+    """``audit(.)`` returns a dict whose key matches the requested check.
 
     PA-306 §3 no-mocks: just calls the real orchestrator on a tmp dir.
     Tools may or may not be installed on the runner; we just assert the
@@ -155,8 +156,18 @@ def test_audit_runner_skips_unavailable_tools(tmp_path):
     # Act
     results = audit(str(target), checks=["python"])
     # Assert
-    assert isinstance(results, dict)
     assert "python" in results
+
+
+def test_audit_runner_check_entry_has_status_field(tmp_path):
+    """Each per-check result dict carries a ``status`` field."""
+    # Arrange
+    from scitex_security import audit
+
+    target = tmp_path
+    # Act
+    results = audit(str(target), checks=["python"])
+    # Assert
     assert "status" in results["python"]
 
 
