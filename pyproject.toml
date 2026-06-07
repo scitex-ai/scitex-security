@@ -4,30 +4,31 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-security"
-version = "0.1.4"
-description = "GitHub security alerts checker (Dependabot, secret scanning, code scanning) — standalone module from the SciTeX ecosystem"
+version = "0.2.0"
+description = "DEPRECATED — absorbed into scitex-audit (ADR-0001). Thin re-export shim; will be yanked from PyPI in a future release. Use scitex-audit instead."
 readme = "README.md"
 license = "AGPL-3.0-only"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{name = "Yusuke Watanabe", email = "ywatanabe@scitex.ai"}]
-keywords = ["scitex", "security", "github", "dependabot", "secret-scanning"]
+keywords = ["scitex", "security", "github", "dependabot", "secret-scanning", "deprecated"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 7 - Inactive",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Security",
 ]
-dependencies = ["click>=8.0"]
+# 0.2.0 is a thin re-export shim per ADR-0001 (scitex-dev #139). All
+# behaviour lives in scitex-audit ≥ 0.2.0; the hard-error CLI redirect
+# uses only stdlib (no click dep needed at this layer — scitex-audit
+# pulls click transitively).
+dependencies = ["scitex-audit>=0.2.0"]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    # tests/develop/test_audit.py imports scitex_dev.testing.audit_all_for_package
-    # which transitively needs the [cli-audit] extra.
-    "scitex-dev[cli-audit]>=0.11.7",
 ]
 docs = [
     "sphinx>=7.0",
@@ -51,12 +52,6 @@ scitex-security = "scitex_security.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-scitex_security = ["_skills/**/*.md"]
-
-[project.entry-points."scitex_dev.skills"]
-scitex-security = "scitex_security"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--disable-warnings"]
@@ -67,7 +62,7 @@ source = ["scitex_security"]
 concurrency = ["multiprocessing", "thread"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
