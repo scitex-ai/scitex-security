@@ -45,10 +45,10 @@ try:
     try:
         __version__ = _v("scitex-security")
     except _PNFE:
-        __version__ = "0.2.0+local"
+        __version__ = "0.0.0+local"
     del _v, _PNFE
 except ImportError:  # pragma: no cover — only on ancient Pythons
-    __version__ = "0.2.0+local"
+    __version__ = "0.0.0+local"
 
 from .github import (  # noqa: E402 — DeprecationWarning emitted before re-export
     GitHubSecurityError,

@@ -3,7 +3,11 @@
 import pytest
 
 CROSS_PACKAGE_IMPORTS = [
-    "scitex_dev._cli._completion",
+    # Updated for the 0.2.0 shim per ADR-0001 (scitex-dev #139):
+    # scitex_security re-exports from scitex_audit.github, so that's
+    # the only real cross-package import. scitex_dev._cli._completion
+    # was used by the old skills/completion wiring (removed in 0.2.0).
+    "scitex_audit.github",
 ]
 
 
