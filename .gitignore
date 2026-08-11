@@ -30,3 +30,4 @@ docs/sphinx/api/
 .scitex/security/runtime/*
 !.scitex/security/runtime/.gitkeep
 !.scitex/security/runtime/README.md
+/.worktrees/
