@@ -56,3 +56,15 @@ def _ensure_subprocess_coverage_shim() -> None:
 
 
 _ensure_subprocess_coverage_shim()
+
+# scitex-logging defaults to WARN (shells often export
+# `SCITEX_LOGGING_LEVEL=warning`), which would silence `log.info`
+# assertions in tests. Default to INFO here; individual tests can
+# still override via the env var or `set_level`.
+os.environ.setdefault("SCITEX_LOGGING_LEVEL", "INFO")
+try:
+    import scitex_logging as _slogging
+
+    _slogging.set_level("INFO")
+except Exception:
+    pass

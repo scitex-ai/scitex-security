@@ -11,7 +11,7 @@ of the W1-reverse per ADR-0002 (scitex-dev #142).
 
 from __future__ import annotations
 
-import logging
+import scitex_logging as slogging
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -22,7 +22,7 @@ from ._github_runner import run_github_check
 from ._pip_audit import run_pip_audit
 from ._shellcheck import run_shellcheck
 
-logger = logging.getLogger(__name__)
+log = slogging.getLogger(__name__)
 
 ALL_CHECKS = ("python", "shell", "deps", "github")
 
@@ -92,12 +92,12 @@ def audit(
 
     for check in requested:
         if check not in ALL_CHECKS:
-            logger.warning("Unknown check %r, skipping", check)
+            log.warning("Unknown check %r, skipping", check)
             continue
 
         if check == "github":
             if not _is_gh_authenticated():
-                logger.info("GitHub CLI not available or not authenticated, skipping")
+                log.info("GitHub CLI not available or not authenticated, skipping")
                 results["github"] = _skipped_result("gh")
                 continue
             results["github"] = run_github_check()
@@ -105,7 +105,7 @@ def audit(
         else:
             tool_name = _TOOL_REQUIREMENTS[check]
             if not _is_tool_available(tool_name):
-                logger.info("%s not installed, skipping %s check", tool_name, check)
+                log.info("%s not installed, skipping %s check", tool_name, check)
                 results[check] = _skipped_result(tool_name)
                 continue
 
@@ -120,7 +120,7 @@ def audit(
         out_path = Path(output_file)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(format_json(results))
-        logger.info("Report written to %s", out_path)
+        log.info("Report written to %s", out_path)
 
     return results
 

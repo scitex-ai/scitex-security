@@ -30,7 +30,7 @@ Usage::
 
 from __future__ import annotations
 
-import logging as _logging
+import scitex_logging as _slogging
 
 try:
     from importlib.metadata import PackageNotFoundError
@@ -65,7 +65,7 @@ try:
     _migrate()
     del _migrate
 except Exception:  # pragma: no cover — best-effort migration
-    _logging.getLogger(__name__).debug(
+    _slogging.getLogger(__name__).debug(
         "scitex-security: reverse-migration of ~/.scitex/audit/github-alerts/ "
         "raised; continuing.",
         exc_info=True,

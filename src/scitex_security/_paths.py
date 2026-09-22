@@ -14,7 +14,7 @@ Follows the SciTeX local-state-directories convention
 
 from __future__ import annotations
 
-import logging as _logging
+import scitex_logging as _slogging
 import os
 import shutil
 import warnings
@@ -38,7 +38,7 @@ _LEGACY_AUDIT_ALERTS_SUBPATH = Path("audit") / "github-alerts"
 #: ``~/.scitex/audit/github-alerts/`` → ``~/.scitex/security/runtime/``.
 _LEGACY_AUDIT_REVERSE_MARKER = ".migrated_from_scitex_audit_user"
 
-_logger = _logging.getLogger(__name__)
+_logger = _slogging.getLogger(__name__)
 
 
 def _project_root() -> Path | None:

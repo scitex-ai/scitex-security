@@ -18,7 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Security",
 ]
-dependencies = ["click>=8.0"]
+dependencies = ["click>=8.0", "scitex-logging>=0.1.0"]
 
 [project.optional-dependencies]
 dev = [
@@ -60,6 +60,10 @@ scitex-security = "scitex_security"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--disable-warnings"]
+markers = [
+    "smoke: fast CLI happy-path tests (<60s, runs on every PR)",
+    "e2e: end-to-end workflows against real subsystems (mandatory on every PR)",
+]
 
 [tool.coverage.run]
 parallel = true

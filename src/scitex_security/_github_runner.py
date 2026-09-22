@@ -19,7 +19,7 @@ caller-supplied ``repo`` argument).
 
 from __future__ import annotations
 
-import logging
+import scitex_logging as slogging
 import subprocess
 from typing import Optional
 
@@ -27,7 +27,7 @@ from typing import Optional
 # GitHubSecurityError`` resolves to the canonical type in ``github.py``.
 from .github import GitHubSecurityError, check_github_alerts
 
-logger = logging.getLogger(__name__)
+log = slogging.getLogger(__name__)
 
 
 __all__ = ["GitHubSecurityError", "run_github_check"]

@@ -4,11 +4,11 @@ coverage:
       default:
         # scitex-security is ramping up; switch to a hard 90% target after
         # the coverage push lands.
-        target: auto
+        target: 90%
         threshold: 1%
     patch:
       default:
-        target: auto
+        target: 90%
         threshold: 1%
 
 comment: false

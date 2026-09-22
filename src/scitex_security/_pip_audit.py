@@ -8,11 +8,11 @@ pip-audit (dependency vulnerability) checker.
 from __future__ import annotations
 
 import json
-import logging
+import scitex_logging as slogging
 import subprocess
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+log = slogging.getLogger(__name__)
 
 
 def run_pip_audit(path: Path) -> dict:
