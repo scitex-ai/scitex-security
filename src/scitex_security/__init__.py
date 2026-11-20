@@ -8,9 +8,9 @@ As of 0.2.0, scitex-security is the unified package that owns the
 multi-tool security-audit orchestrator (bandit / shellcheck / pip-audit)
 in addition to its original GitHub-alerts checker (Dependabot, secret
 scanning, code scanning). The audit orchestrator was absorbed from
-``scitex-audit 0.2.0`` per ADR-0002 (scitex-dev #142); future
-``scitex-audit`` releases are deprecated thin re-export shims of this
-package.
+``scitex-audit 0.2.0`` per ADR-0002 (scitex-dev #142). The old repository
+is a public archive; its historical distributions remain installable for
+existing callers. New consumers should use this package.
 
 Usage::
 
@@ -45,6 +45,7 @@ except ImportError:  # pragma: no cover — only on ancient Pythons
     __version__ = "0.0.0+local"
 
 from ._runner import audit
+from .credentials import audit_credentials
 from .github import (
     GitHubSecurityError,
     check_github_alerts,
@@ -52,6 +53,7 @@ from .github import (
     get_latest_alerts_file,
     save_alerts_to_file,
 )
+from .host import audit_host
 
 # One-shot reverse-migration of ``~/.scitex/audit/github-alerts/`` →
 # ``~/.scitex/security/runtime/`` from users who ran scitex-audit 0.2.0
@@ -74,6 +76,8 @@ except Exception:  # pragma: no cover — best-effort migration
 __all__ = [
     "__version__",
     "audit",
+    "audit_credentials",
+    "audit_host",
     "GitHubSecurityError",
     "check_github_alerts",
     "format_alerts_report",

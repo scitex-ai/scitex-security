@@ -24,7 +24,7 @@ from ._shellcheck import run_shellcheck
 
 logger = logging.getLogger(__name__)
 
-ALL_CHECKS = ("python", "shell", "deps", "github")
+ALL_CHECKS = ("python", "shell", "deps", "github", "credentials")
 
 _TOOL_REQUIREMENTS = {
     "python": "bandit",
@@ -76,7 +76,7 @@ def audit(
     path : str
         Directory to scan. Defaults to current directory.
     checks : list[str] | None
-        Which checks to run. Options: "python", "shell", "deps", "github".
+        Which checks to run. Options: "python", "shell", "deps", "github", "credentials".
         None means run all available checks.
     output_file : str | None
         If given, write JSON report to this path.
@@ -95,7 +95,11 @@ def audit(
             logger.warning("Unknown check %r, skipping", check)
             continue
 
-        if check == "github":
+        if check == "credentials":
+            from .credentials import audit_credentials
+            results[check] = audit_credentials(str(target))
+
+        elif check == "github":
             if not _is_gh_authenticated():
                 logger.info("GitHub CLI not available or not authenticated, skipping")
                 results["github"] = _skipped_result("gh")

@@ -6,7 +6,7 @@
   </a>
 </p>
 
-<p align="center"><b>GitHub security-alert utilities — Dependabot, secret scanning, code scanning. Pure stdlib + `gh` subprocess, zero scitex.* runtime deps.</b></p>
+<p align="center"><b>Security checks for code, dependencies, credentials, and Ubuntu hosts, plus GitHub security alerts.</b></p>
 
 <p align="center">
   <a href="https://scitex-security.readthedocs.io/">Full Documentation</a> · <code>uv pip install scitex-security[all]</code>
@@ -31,6 +31,41 @@
 pip install scitex-security
 ```
 
+## Local credential and host checks
+
+```bash
+scitex-security check . --checks credentials --json
+scitex-security check-credentials ~/.dotfiles/src/.bash.d --json
+scitex-security check-credentials . --secret-path /path/to/private/file --json
+scitex-security check-host --json
+```
+
+Credential checks report exposed file permissions, plaintext working credentials,
+and literal credentials/private keys in Git index blobs. Reports contain paths,
+line numbers and rule codes, never credential values or source excerpts. Git
+history and arbitrary application code are outside this bounded scan. Encrypted
+Git blobs are checked as stored, rather than assuming a configured filter is
+working. Group/other permissions are advisory POSIX checks; ACLs and Windows
+host access require separate review. The scanner never changes permissions or
+rotates credentials.
+
+Host checks observe Ubuntu identity, running kernel, WSL status, the reboot
+marker, APT upgrade simulation against existing metadata, automatic-update
+settings, AppArmor state and failed/critical services. No metadata refresh,
+package upgrade, service restart, or reboot is performed. Missing observations
+stay unknown; installed kernel numbers alone do not prove CVE remediation or
+AppArmor profile enforcement. WSL kernel updates are tracked separately from
+Ubuntu packages. Reports are local security observations, not proof that a host
+has never been compromised.
+
+Standalone commands exit 1 for findings, 2 for incomplete/error checks, and 3
+when skipped; exit 0 means the bounded observations passed. `check` also exits
+nonzero for checker errors. Optional checker tools remain explicit prerequisites:
+Bandit, ShellCheck, pip-audit, and authenticated `gh` for their respective checks.
+
+`scitex-security` is the canonical provider. `scitex-audit` is a public archive;
+existing migration identifiers remain for compatibility with old state.
+
 ## Architecture
 
 ```
@@ -42,7 +77,7 @@ src/scitex_security/
 └── _skills.py      # bundled agent skills
 
 Runtime flow:
-  scitex-security check <owner/repo>
+  scitex-security github check <owner/repo>
         │
         ▼
   github.check_github_alerts()
@@ -86,8 +121,8 @@ save_alerts_to_file(alerts, output_dir=".scitex/security/runtime")
 <br>
 
 ```bash
-scitex-security check ywatanabe1989/myrepo
-scitex-security show-latest --security-dir ~/.scitex/security/runtime
+scitex-security github check ywatanabe1989/myrepo
+scitex-security github show-latest --security-dir ~/.scitex/security/runtime
 ```
 
 </details>
