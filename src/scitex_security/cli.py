@@ -183,6 +183,9 @@ def check_host_cmd(ctx, as_json, output):
 
     Reads existing APT metadata. Does not update, upgrade, restart, or reboot.
     Unknown patch status never means that a host is fully patched.
+
+    Example:
+      $ scitex-security check-host --json
     """
     from ._format import format_json, format_text
     from .host import audit_host
@@ -208,6 +211,9 @@ def check_credentials_cmd(ctx, path, secret_paths, as_json, output):
     Checks credential files in the Git index and explicit local paths; does
     not scan Git history, authenticate, rotate passwords, or modify files.
     Exit 1 means findings, 2 means incomplete checks, 3 means skipped.
+
+    Example:
+      $ scitex-security check-credentials . --json
     """
     from ._format import format_json, format_text
     from .credentials import audit_credentials
