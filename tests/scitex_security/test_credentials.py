@@ -133,3 +133,17 @@ def test_cli_returns_findings_without_exposing_values(tmp_path):
     assert result.exit_code == 1
     assert json.loads(result.output)['results']['credentials']['status'] == 'findings'
     assert 'fixture-cli-sensitive-value' not in result.output
+
+
+def test_openpgp_private_export_is_not_confused_with_public_ciphertext(tmp_path):
+    # Arrange
+    git(tmp_path, 'init', '-q')
+    private = tmp_path / 'export.key'
+    private.write_text('-----BEGIN PGP PRIVATE KEY BLOCK-----\nfixture-openpgp-private-data\n')
+    private.chmod(0o600)
+    git(tmp_path, 'add', 'export.key')
+    # Act
+    result = audit_credentials(str(tmp_path))
+    # Assert
+    assert any(f['code'] == 'CRED_TRACKED_PRIVATE_KEY' for f in result['findings'])
+    assert 'fixture-openpgp-private-data' not in json.dumps(result)

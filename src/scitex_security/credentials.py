@@ -21,7 +21,7 @@ _ASSIGNMENT = re.compile(
     r"^\s*(?:export\s+)?[\w.-]*(?:PASSWORD|PASSWD|TOKEN|SECRET|API_KEY|PRIVATE_KEY)[\w.-]*\s*[:=]\s*(.+?)\s*$",
     re.IGNORECASE,
 )
-_PRIVATE_KEY = re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----")
+_PRIVATE_KEY = re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----")
 _EXAMPLES = (".example", ".sample", ".template", ".dist")
 
 
