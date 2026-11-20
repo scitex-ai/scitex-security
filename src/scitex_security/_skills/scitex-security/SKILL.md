@@ -1,8 +1,8 @@
 ---
 name: scitex-security
 description: |
-  [WHAT] GitHub security-alert utilities — Dependabot, secret scanning, code scanning.
-  [WHEN] Checking for open security alerts on GitHub repos from a script or automation.
+  [WHAT] Code, dependency, credential and Ubuntu host checks, plus GitHub security alerts.
+  [WHEN] Auditing repository or host security hygiene from a script or automation.
   [HOW] `from scitex_security import check_github_alerts` or `scitex-security --help`.
 primary_interface: python
 interfaces:
@@ -20,7 +20,9 @@ tags: [scitex-security]
 
 # scitex-security
 
-GitHub security-alert utilities. `check_github_alerts(repo=...)` returns the open Dependabot/CodeQL alerts as a structured list. Drop-in replacement for `gh api repos/{owner}/{repo}/dependabot/alerts` shell-outs in monitoring dashboards.
+The canonical security package; scitex-audit is archived. `audit(path)` orchestrates repository checks. `audit_credentials(path, secret_paths=...)` inspects sensitive permissions and actual Git index content without recording values. `audit_host()` observes Ubuntu/WSL patch posture without installing updates or restarting services. `check_github_alerts(repo=...)` returns GitHub alerts.
+
+Use the read-only checks to prepare findings and maintenance work. They do not establish that a host is uncompromised or fully patched. Preserve unknown/skipped coverage, keep fleet reports private, and never include credential contents in notifications or issue reports.
 
 See README.md and the package's public `__init__.py` for the full
 function list. This skill leaf exists so agents discover the package

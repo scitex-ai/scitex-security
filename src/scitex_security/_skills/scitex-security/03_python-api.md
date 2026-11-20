@@ -59,3 +59,17 @@ print(report)
 ## GitHubSecurityError
 
 Raised when the `gh` CLI is unavailable or returns an error.
+
+
+## audit_credentials(path=".", secret_paths=None) -> dict
+
+Read-only bounded credential audit. Inspect `status`, `findings`, and `coverage`;
+values and excerpts are omitted. Git index blobs are checked separately from
+the working copy. File modes are POSIX observations; key encryption, ACLs and
+Git history need separate assessment.
+
+## audit_host(root="/") -> dict
+
+Read-only Ubuntu/WSL patch and service observations. Inspect `facts` and unknown
+checks, not only the summary. Synthetic roots do not run host commands. It does
+not refresh package metadata, apply upgrades, or reboot.

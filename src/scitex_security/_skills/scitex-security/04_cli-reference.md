@@ -13,12 +13,15 @@ scitex-security --help
 
 | Command | Purpose |
 |---|---|
-| `scitex-security check <repo>` | Check Dependabot / CodeQL / secret-scanning alerts |
-| `scitex-security check <repo> --save` | Save report to `~/.scitex/security/runtime/` |
-| `scitex-security show-latest` | Print most recent saved report |
+| `scitex-security check <path>` | Run available code, dependency, credential and GitHub checks |
+| `scitex-security github check <repo> --save` | Save report to `~/.scitex/security/runtime/` |
+| `scitex-security github show-latest` | Print most recent saved report |
 | `scitex-security list-python-apis` | List public Python API surface |
 | `scitex-security skills list` | List bundled agent skill files |
 | `scitex-security skills install` | Install skills into `~/.scitex/dev/skills/` |
+
+| `scitex-security check-credentials <path> --json` | Read-only credential permissions and Git index checks; no secret values in reports |
+| `scitex-security check-host --json` | Ubuntu/WSL patch, reboot and AppArmor observations; no upgrades/restarts |
 
 ### Universal flags
 

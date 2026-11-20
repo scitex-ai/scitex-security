@@ -83,7 +83,7 @@ def _show_recursive_help(ctx: click.Context) -> None:
 )
 @click.pass_context
 def main(ctx: click.Context, help_recursive: bool, as_json: bool) -> None:
-    """scitex-security — GitHub security-alert utilities (Dependabot, CodeQL, secret scanning).
+    """scitex-security — code, credential, Ubuntu host and GitHub security checks.
 
     \b
     Config is loaded with the SciTeX precedence chain:
@@ -114,7 +114,7 @@ def main(ctx: click.Context, help_recursive: bool, as_json: bool) -> None:
 @click.option(
     "--checks",
     multiple=True,
-    type=click.Choice(["python", "shell", "deps", "github"]),
+    type=click.Choice(["python", "shell", "deps", "github", "credentials"]),
     help="Which checks to run (repeat the flag). Defaults to all available.",
 )
 @click.option(
@@ -170,7 +170,62 @@ def check_cmd(
     any_findings = any(
         r.get("status") == "findings" for r in results.values() if isinstance(r, dict)
     )
-    ctx.exit(1 if any_findings else 0)
+    any_errors = any(r.get("status") == "error" for r in results.values() if isinstance(r, dict))
+    ctx.exit(2 if any_errors else 1 if any_findings else 0)
+
+
+@main.command("check-host")
+@click.option("--json", "as_json", is_flag=True, help="Emit read-only host observations as JSON.")
+@click.option("--output", type=click.Path(), help="Save a JSON report.")
+@click.pass_context
+def check_host_cmd(ctx, as_json, output):
+    """Inspect Ubuntu updates, reboot state, AppArmor and critical services.
+
+    Reads existing APT metadata. Does not update, upgrade, restart, or reboot.
+    Unknown patch status never means that a host is fully patched.
+
+    Example:
+      $ scitex-security check-host --json
+    """
+    from ._format import format_json, format_text
+    from .host import audit_host
+    result = audit_host()
+    report = {"host": result}
+    if output:
+        destination = Path(output)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(format_json(report))
+    click.echo(format_json(report) if as_json or ctx.obj.get("as_json") else format_text(report))
+    ctx.exit({"ok": 0, "findings": 1, "error": 2, "skipped": 3}[result["status"]])
+
+
+@main.command("check-credentials")
+@click.argument("path", type=click.Path(exists=True, file_okay=False), required=True)
+@click.option("--secret-path", "secret_paths", multiple=True, help="Additional sensitive file or directory; repeatable.")
+@click.option("--json", "as_json", is_flag=True, help="Emit a report without secret values.")
+@click.option("--output", type=click.Path(), help="Save a JSON report.")
+@click.pass_context
+def check_credentials_cmd(ctx, path, secret_paths, as_json, output):
+    """Read-only permissions and plaintext credential checks over PATH.
+
+    Checks credential files in the Git index and explicit local paths; does
+    not scan Git history, authenticate, rotate passwords, or modify files.
+    Exit 1 means findings, 2 means incomplete checks, 3 means skipped.
+
+    Example:
+      $ scitex-security check-credentials . --json
+    """
+    from ._format import format_json, format_text
+    from .credentials import audit_credentials
+
+    result = audit_credentials(path, secret_paths=secret_paths)
+    report = {"credentials": result}
+    if output:
+        destination = Path(output)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(format_json(report))
+    click.echo(format_json(report) if as_json or ctx.obj.get("as_json") else format_text(report))
+    ctx.exit({"ok": 0, "findings": 1, "error": 2, "skipped": 3}[result["status"]])
 
 
 # --------------------------------------------------------------------------- #
@@ -408,14 +463,14 @@ def mcp_list_tools(ctx: click.Context, as_json: bool) -> None:
 
 # Wire the skills group (audit-cli §1a — packages with _skills/ MUST
 # expose `<cli> skills {list,get,install}`).
-from ._skills import skills_group as _skills_group
+from ._skills import skills_group as _skills_group  # noqa: E402
 
 main.add_command(_skills_group, name="skills")
 
 
 # Wire canonical install-shell-completion + print-shell-completion (§1a).
 try:
-    from scitex_dev._cli._completion import attach_shell_completion
+    from scitex_dev._cli._completion import attach_shell_completion  # noqa: E402
 
     attach_shell_completion(main, prog_name="scitex-security")
 except ImportError:
