@@ -7,6 +7,20 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-11-27
+
+First published release of the 0.3 line; contents are those of 0.3.0 below.
+
+### Fixed
+
+- Release pipeline: the tag workflow's `.github/ci` scripts were stale and
+  demanded an apptainer shim path the current org runners do not have, so
+  every test leg of the v0.3.0 tag failed before building. **0.3.0 was never
+  published to PyPI.** Ported the host-agnostic SIF release scripts and
+  workflow scitex-notification releases with (apptainer from the shim or
+  PATH, job-owned scratch, image verified by the new repo variable
+  `SCITEX_CI_SIF_SHA256`).
+
 ## [0.3.0] — 2026-11-27
 
 ### Added

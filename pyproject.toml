@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-security"
-version = "0.3.0"
+version = "0.3.1"
 description = "Unified security scanning for the SciTeX ecosystem: bandit + shellcheck + pip-audit + GitHub alerts (Dependabot, secret scanning, code scanning) in one orchestrator, plus a look-alike (typosquat / homograph) domain watch"
 readme = "README.md"
 license = "AGPL-3.0-only"
