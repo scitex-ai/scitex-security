@@ -30,7 +30,7 @@ Usage::
 
 from __future__ import annotations
 
-import logging as _logging
+import scitex_logging as _logging
 
 try:
     from importlib.metadata import PackageNotFoundError

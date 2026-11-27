@@ -1,8 +1,8 @@
 ---
 name: scitex-security
 description: |
-  [WHAT] GitHub security-alert utilities — Dependabot, secret scanning, code scanning.
-  [WHEN] Checking for open security alerts on GitHub repos from a script or automation.
+  [WHAT] GitHub security-alert utilities (Dependabot, secret scanning, code scanning), a bandit/shellcheck/pip-audit sweep, and a look-alike (typosquat / IDN homograph) domain watch.
+  [WHEN] Checking open security alerts on GitHub repos, sweeping a repo, or watching for impersonation domains (new registrations, MX records, certificates) of a domain you own.
   [HOW] `from scitex_security import check_github_alerts` or `scitex-security --help`.
 primary_interface: python
 interfaces:
@@ -34,6 +34,7 @@ signatures.
 - [02_quick-start.md](02_quick-start.md) — 30-second tour
 - [03_python-api.md](03_python-api.md) — Python API surface
 - [04_cli-reference.md](04_cli-reference.md) — CLI subcommands
+- [05_domain-watch.md](05_domain-watch.md) — look-alike domain watch (typos, homoglyphs, TLD swaps; DNS/MX, CT, RDAP; alerts)
 
 ### Configuration (20–29)
 - [20_env-vars.md](20_env-vars.md) — environment variables

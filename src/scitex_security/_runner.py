@@ -11,7 +11,7 @@ of the W1-reverse per ADR-0002 (scitex-dev #142).
 
 from __future__ import annotations
 
-import logging
+import scitex_logging as logging
 import shutil
 from pathlib import Path
 from typing import Optional

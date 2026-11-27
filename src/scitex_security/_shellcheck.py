@@ -8,7 +8,7 @@ ShellCheck (shell script analysis) checker.
 from __future__ import annotations
 
 import json
-import logging
+import scitex_logging as logging
 import subprocess
 from pathlib import Path
 

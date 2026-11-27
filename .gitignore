@@ -31,3 +31,7 @@ docs/sphinx/api/
 !.scitex/security/runtime/.gitkeep
 !.scitex/security/runtime/README.md
 /.worktrees/
+
+# Regenerable runtime state (PS-234): never tracked.
+.scitex/*/runtime/*
+.coverage.*

@@ -1,0 +1,25 @@
+[Unit]
+Description=scitex-security domains watch: look-alike domains, mail only what is new
+Documentation=https://github.com/scitex-ai/scitex-security
+After=network-online.target
+Wants=network-online.target
+
+# Install (user units):
+#   mkdir -p ~/.config/systemd/user ~/.scitex/security/logs
+#   cp scitex-security-domains.{service,timer} ~/.config/systemd/user/
+#   cp domains.env.example ~/.scitex/security/domains.env   # edit
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now scitex-security-domains.timer
+
+[Service]
+Type=oneshot
+# Watched domains and the mail profile. Nothing host-specific is baked in.
+EnvironmentFile=%h/.scitex/security/domains.env
+# $SCITEX_SECURITY_DOMAINS_ARGS is unbraced on purpose: systemd splits it on
+# whitespace into separate arguments. Exit 1 means "new events" (mailed), so
+# it is a success for the unit.
+ExecStart=/usr/bin/timeout 1800 %h/.venv-security/bin/scitex-security domains watch $SCITEX_SECURITY_DOMAINS_ARGS --notify --json
+SuccessExitStatus=1
+StandardOutput=append:%h/.scitex/security/logs/domains.log
+StandardError=append:%h/.scitex/security/logs/domains.log
+Nice=10

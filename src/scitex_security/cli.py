@@ -408,9 +408,13 @@ def mcp_list_tools(ctx: click.Context, as_json: bool) -> None:
 
 # Wire the skills group (audit-cli §1a — packages with _skills/ MUST
 # expose `<cli> skills {list,get,install}`).
-from ._skills import skills_group as _skills_group
+from ._skills import skills_group as _skills_group  # noqa: E402
 
 main.add_command(_skills_group, name="skills")
+
+from ._cli_domains import domains_group as _domains_group  # noqa: E402
+
+main.add_command(_domains_group, name="domains")
 
 
 # Wire canonical install-shell-completion + print-shell-completion (§1a).

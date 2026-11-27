@@ -6,7 +6,7 @@
   </a>
 </p>
 
-<p align="center"><b>GitHub security-alert utilities — Dependabot, secret scanning, code scanning. Pure stdlib + `gh` subprocess, zero scitex.* runtime deps.</b></p>
+<p align="center"><b>Security checks for the SciTeX ecosystem: GitHub alerts (Dependabot, secret scanning, code scanning), a bandit / shellcheck / pip-audit sweep, and a look-alike domain watch.</b></p>
 
 <p align="center">
   <a href="https://scitex-security.readthedocs.io/">Full Documentation</a> · <code>uv pip install scitex-security[all]</code>
@@ -92,6 +92,30 @@ scitex-security show-latest --security-dir ~/.scitex/security/runtime
 
 </details>
 
+## Look-alike domain watch
+
+Finds registered typo / homograph (e.g. Cyrillic `с` for Latin `c`) /
+TLD-swap / affix look-alikes of a domain you own, with their MX records
+(can they send mail as you?), Certificate Transparency certificates and
+RDAP registration dates. Remembers what it saw and alerts only on new
+registrations, new MX records and new certificates.
+
+```bash
+scitex-security domains list-candidates example.org          # offline: what would be checked
+scitex-security domains watch example.org example.net   # table of registered look-alikes
+scitex-security domains watch example.org --notify      # + mail new events (pip install 'scitex-security[notify]')
+```
+
+```python
+from scitex_security.domains import watch_domains
+
+result = watch_domains(["example.org"])
+for report in result["reports"]:
+    print(report.domain, [(h["risk"], h["name"], h["mx"]) for h in report.hits])
+```
+
+Daily systemd user units: [`examples/systemd/`](examples/systemd/).
+
 ## Demo
 
 ```mermaid
@@ -128,8 +152,8 @@ Alert output precedence: `--output-dir` / `--security-dir` → `$SCITEX_SECURITY
 
 ## Status
 
-Standalone fork of `scitex.security`. Pure stdlib + `gh` CLI subprocess —
-zero scitex.* runtime deps. Umbrella `scitex.security` import path is
+Standalone fork of `scitex.security`. Runtime deps: click, dnspython,
+scitex-logging (+ `gh` CLI; scitex-notification for `[notify]`). Umbrella `scitex.security` import path is
 preserved via a `sys.modules`-alias bridge.
 
 ## Part of SciTeX
