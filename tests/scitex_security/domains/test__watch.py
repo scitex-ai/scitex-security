@@ -246,3 +246,14 @@ def test_first_successful_ct_check_of_known_name_only_records(tmp_path):
     report = _run(tmp_path, zone, web=_web(certs=[crt_row(5, "example.com")]))
     # Assert
     assert report.events == []
+
+
+def test_old_certificate_seen_late_is_not_an_event(tmp_path):
+    # Arrange: CT answered empty at baseline, then shows a months-old cert
+    zone = {"example.com": {"A": ["192.0.2.1"]}}
+    _run(tmp_path, zone, web=_web(certs=[]))
+    stale = crt_row(9, "example.com", not_before="2026-07-27T00:00:00")
+    # Act
+    report = _run(tmp_path, zone, web=_web(certs=[stale]))
+    # Assert
+    assert report.events == []

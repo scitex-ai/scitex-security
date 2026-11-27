@@ -7,6 +7,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-11-27
+
+### Fixed
+
+- `domains watch`: a `new-cert` event now needs a certificate issued no
+  earlier than 7 days before the previous run. crt.sh sometimes answers an
+  exact-name query with an empty list and returns months-old certificates
+  on a later day; the first live run mailed two such false "first cert"
+  events (certificates from 2025-12 and 2026-07).
+
 ## [0.3.1] — 2026-11-27
 
 First published release of the 0.3 line; contents are those of 0.3.0 below.

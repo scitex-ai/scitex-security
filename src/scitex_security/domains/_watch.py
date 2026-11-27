@@ -41,6 +41,9 @@ from ._web import FetchError, FetchFn, Throttle, registration_dates, search_cert
 STATE_VERSION = 1
 #: A registration or certificate younger than this is flagged high risk.
 RECENT_DAYS = 90
+#: A certificate counts as new only if issued at most this many days before
+#: the previous run (CT logging lag plus missed daily runs).
+CERT_FRESH_SLACK_DAYS = 7
 
 
 def default_state_dir() -> Path:
@@ -304,6 +307,12 @@ def watch_domain(
     # established site (every 60-90 days) are recorded, not alerted.
     seen_certs = state["certs"]
     certified_before = {c.get("lookalike") for c in seen_certs.values()}
+    last_run = (previous or {}).get("last_run") or stamp
+    fresh_since = (
+        (datetime.fromisoformat(last_run) - timedelta(days=CERT_FRESH_SLACK_DAYS))
+        .date()
+        .isoformat()
+    )
     for base, by_id in cert_hits.items():
         entry = names.get(base)
         new_certs = []
@@ -318,13 +327,18 @@ def watch_domain(
                     {*entry.get("cert_dates", []), cert.not_before[:10]}
                 )
         known_without_baseline = base in unbaselined and base in previous_names
+        # A certificate issued well before the previous run is not news even
+        # if this is the first time we SEE it: crt.sh sometimes answers an
+        # exact query with an empty list, then returns months-old
+        # certificates on a later day.
+        fresh = [c for c in new_certs if c.not_before[:10] >= fresh_since]
         if (
-            new_certs
+            fresh
             and not baseline
             and base not in certified_before
             and not known_without_baseline
         ):
-            first = min(new_certs, key=lambda c: c.not_before)
+            first = min(fresh, key=lambda c: c.not_before)
             events.append(
                 (
                     "new-cert",
