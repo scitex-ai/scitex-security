@@ -72,7 +72,7 @@ def compose_alert(
         "done": lines,
         "running": [
             f"daily look-alike watch of {', '.join(watched)} on {host}",
-            "high = new in the last 90 days, or brand-intact name with MX records",
+            "high = registered in the last 90 days, or brand-intact name with MX records",
         ],
         "meta": {"agent": AGENT_NAME, "host": host, "refs": "-"},
     }

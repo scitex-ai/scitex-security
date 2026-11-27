@@ -14,6 +14,7 @@ from _domain_fakes import (
 
 from scitex_security.domains._watch import (
     assess_risk,
+    is_brand_intact,
     load_state,
     peek_pending_events,
     pop_pending_events,
@@ -166,7 +167,7 @@ def test_old_resolving_registration_is_medium_risk():
     # Arrange
     entry = {"kind": "tld-swap", "records": {"A": ["192.0.2.1"]}, "created": "2015"}
     # Act
-    risk = assess_risk(entry, NOW.date())
+    risk = assess_risk(entry, NOW.date(), brand=True)
     # Assert
     assert risk == "medium"
 
@@ -184,7 +185,7 @@ def test_brand_lookalike_with_mx_is_high_risk():
     # Arrange
     entry = {"kind": "affix", "records": {"MX": ["mx.test"]}, "created": "2015"}
     # Act
-    risk = assess_risk(entry, NOW.date())
+    risk = assess_risk(entry, NOW.date(), brand=True)
     # Assert
     assert risk == "high"
 
@@ -196,3 +197,52 @@ def test_registered_lookalike_gets_an_exact_ct_query(tmp_path):
     _run(tmp_path, {"getexample.ai": {"NS": ["ns.test"]}}, web=web)
     # Assert
     assert any("q=getexample.ai&" in url for url in web.urls)
+
+
+def test_recent_certificate_alone_is_not_high_risk():
+    # Arrange
+    entry = {"kind": "omission", "records": {"A": ["192.0.2.1"]},
+             "created": "2001-01-01", "cert_dates": ["2026-11-20"]}  # fmt: skip
+    # Act
+    risk = assess_risk(entry, NOW.date())
+    # Assert
+    assert risk == "low"
+
+
+def test_ct_name_with_brand_label_is_brand_intact():
+    # Arrange
+    entry = {"kind": "ct"}
+    # Act
+    brand = is_brand_intact(entry, "example.de", "example")
+    # Assert
+    assert brand
+
+
+def test_ct_name_with_longer_word_is_not_brand_intact():
+    # Arrange
+    entry = {"kind": "ct"}
+    # Act
+    brand = is_brand_intact(entry, "examples.org", "example")
+    # Assert
+    assert not brand
+
+
+def test_certificate_renewal_is_not_an_event(tmp_path):
+    # Arrange
+    zone = {"example.com": {"A": ["192.0.2.1"]}}
+    _run(tmp_path, zone, web=_web(certs=[crt_row(1, "example.com")]))
+    renewed = _web(certs=[crt_row(1, "example.com"), crt_row(2, "example.com")])
+    # Act
+    report = _run(tmp_path, zone, web=renewed)
+    # Assert
+    assert report.events == []
+
+
+def test_first_successful_ct_check_of_known_name_only_records(tmp_path):
+    # Arrange
+    zone = {"example.com": {"A": ["192.0.2.1"]}}
+    _run(tmp_path, zone, ct=False)
+    # Act
+    report = _run(tmp_path, zone, web=_web(certs=[crt_row(5, "example.com")]))
+    # Assert
+    assert report.events == []

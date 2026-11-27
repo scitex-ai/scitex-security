@@ -63,11 +63,14 @@ After that an event is raised only for:
 - `new-mx`: a known look-alike gained MX records (it can send/receive mail);
 - `new-cert`: a new unexpired certificate names a look-alike.
 
-Risk per hit: **high** = registered or certified in the last 90 days, or a
-brand-intact look-alike (homoglyph, TLD swap, affix, hyphenation, CT) with MX
-records; **medium** = a typo with MX records, or a brand-intact name that
-resolves; **low** = the rest (parked names; typos that are other real
-words, which a short brand has many of).
+Risk per hit: **high** = registered in the last 90 days (RDAP), or a
+brand-intact look-alike with MX records (homoglyph, TLD swap, affix,
+hyphenation; or a CT-found name whose label is the brand or the brand plus a
+hyphenated word); **medium** = any other look-alike with MX, or a
+brand-intact name that resolves; **low** = the rest (parked names; typos and
+longer words that are other real names, which a short brand has many of).
+Certificate dates do not raise risk (ACME certificates renew every 60-90
+days on old domains too); a new certificate is an event instead.
 
 CT is queried two ways: the `label%` prefix (finds names nobody generated,
 e.g. `example-pay.xyz`; crt.sh silently returns nothing for a leading

@@ -38,7 +38,12 @@ class RateLimited(FetchError):
 def urllib_fetch(url: str, timeout: float = 60.0) -> object:
     """GET ``url`` and parse JSON. 404 returns None (no such object)."""
     request = urllib.request.Request(
-        url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            # RDAP servers may refuse plain JSON (HTTP 406); crt.sh ignores it.
+            "Accept": "application/rdap+json, application/json",
+        },
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310

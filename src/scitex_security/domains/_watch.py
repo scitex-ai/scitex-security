@@ -99,24 +99,35 @@ def _is_recent(day: Optional[str], today: date) -> bool:
 #: Generators whose output keeps the whole brand intact (``example-app.com``,
 #: ``example.net``, ``ехample.ai``). A single-letter typo of a short brand is
 #: often an unrelated real word (an existing company), so typos weigh less.
-BRAND_KINDS = frozenset({"homoglyph", "tld-swap", "affix", "hyphenation", "ct"})
+BRAND_KINDS = frozenset({"homoglyph", "tld-swap", "affix", "hyphenation"})
 
 
-def assess_risk(entry: dict, today: date) -> str:
+def is_brand_intact(entry: dict, ascii_name: str, label: str) -> bool:
+    """Generated brand-keeping kinds, or a CT-found name whose label IS the
+    brand (``example.de``) or the brand plus a hyphenated word
+    (``example-pay.com``). A longer word that merely starts with the brand
+    (``examples.org``) is not."""
+    if entry.get("kind") in BRAND_KINDS:
+        return True
+    head = ascii_name.split(".", 1)[0]
+    return head == label or head.startswith(label + "-") or head.endswith("-" + label)
+
+
+def assess_risk(entry: dict, today: date, brand: bool = False) -> str:
     """Impersonation risk of one registered look-alike.
 
-    * ``high``: registered or certified in the last :data:`RECENT_DAYS`
-      days, or a brand-intact look-alike (:data:`BRAND_KINDS`) with MX
-      records, i.e. it can send mail that reads as yours;
+    * ``high``: registered in the last :data:`RECENT_DAYS` days (RDAP), or a
+      brand-intact look-alike (``brand``) with MX records, i.e. it can send
+      mail that reads as yours;
     * ``medium``: any other look-alike with MX, or a brand-intact one that
       resolves to an address;
     * ``low``: everything else (parked, typo of another real word, ...).
+
+    Certificate dates are NOT a recency signal: ACME certificates renew
+    every 60-90 days on domains of any age. A new certificate is an event.
     """
     records = entry.get("records") or {}
-    recent = _is_recent(entry.get("created") or "", today) or any(
-        _is_recent(day, today) for day in entry.get("cert_dates") or []
-    )
-    brand = entry.get("kind") in BRAND_KINDS
+    recent = _is_recent(entry.get("created") or "", today)
     resolves = bool(records.get("A") or records.get("AAAA"))
     if recent or (brand and records.get("MX")):
         return "high"
@@ -231,6 +242,7 @@ def watch_domain(
     probes: dict = probe_domains(list(by_ascii), query=query, workers=workers)
 
     names = state["names"]
+    previous_names = set(names)
     events: list = []
     registered_now = []
     for ascii_name, probe in probes.items():
@@ -272,6 +284,9 @@ def watch_domain(
 
     # Certificate Transparency, exact name, for every registered look-alike:
     # cheap for crt.sh, and covers IDN (punycode) names a keyword never matches.
+    # Names whose exact query never succeeded before have no certificate
+    # baseline yet; their first successful query only records.
+    unbaselined = {n for n, e in names.items() if not e.get("ct_checked")}
     if ct:
         for ascii_name in registered_now:
             try:
@@ -281,33 +296,47 @@ def watch_domain(
             except FetchError as exc:
                 report.errors.append(f"crt.sh {ascii_name}: {exc}")
                 continue
+            names[ascii_name]["ct_checked"] = True
             for cert in found:
                 cert_hits.setdefault(ascii_name, {})[cert.id] = cert
 
+    # Only a look-alike's FIRST certificate is an event: ACME renewals of an
+    # established site (every 60-90 days) are recorded, not alerted.
     seen_certs = state["certs"]
+    certified_before = {c.get("lookalike") for c in seen_certs.values()}
     for base, by_id in cert_hits.items():
         entry = names.get(base)
+        new_certs = []
         for cert in by_id.values():
             key = str(cert.id)
             if key in seen_certs:
                 continue
             seen_certs[key] = {**cert.to_dict(), "lookalike": base, "first_seen": stamp}
+            new_certs.append(cert)
             if entry is not None:
-                entry.setdefault("cert_dates", [])
                 entry["cert_dates"] = sorted(
-                    {*entry["cert_dates"], cert.not_before[:10]}
+                    {*entry.get("cert_dates", []), cert.not_before[:10]}
                 )
-            if not baseline:
-                events.append(
-                    (
-                        "new-cert",
-                        base,
-                        f"cert {cert.id} {cert.not_before[:10]} {cert.issuer[:60]}",
-                    )
+        known_without_baseline = base in unbaselined and base in previous_names
+        if (
+            new_certs
+            and not baseline
+            and base not in certified_before
+            and not known_without_baseline
+        ):
+            first = min(new_certs, key=lambda c: c.not_before)
+            events.append(
+                (
+                    "new-cert",
+                    base,
+                    f"first cert {first.id} {first.not_before[:10]} {first.issuer[:60]}",
                 )
+            )
 
     for ascii_name in registered_now:
-        names[ascii_name]["risk"] = assess_risk(names[ascii_name], today)
+        entry = names[ascii_name]
+        brand = is_brand_intact(entry, ascii_name, label)
+        entry["risk"] = assess_risk(entry, today, brand)
     for kind, ascii_name, detail in events:
         entry = names.get(ascii_name) or {}
         risk = entry.get("risk") or ("high" if kind != "new-registration" else "low")
