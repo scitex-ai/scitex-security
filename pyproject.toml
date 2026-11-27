@@ -22,6 +22,8 @@ dependencies = [
     "click>=8.0",
     # `domains`: MX/NS lookups need a real DNS client; pure Python, no deps.
     "dnspython>=2.4",
+    # PS-220: package diagnostics go through scitex-logging, not stdlib logging.
+    "scitex-logging>=0.2.1",
 ]
 
 [project.optional-dependencies]

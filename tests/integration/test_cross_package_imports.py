@@ -12,6 +12,7 @@ import pytest
 
 CROSS_PACKAGE_IMPORTS = [
     "scitex_dev._cli._completion",
+    "scitex_logging",
     "scitex_notification",
 ]
 

@@ -14,7 +14,7 @@ Follows the SciTeX local-state-directories convention
 
 from __future__ import annotations
 
-import logging as _logging
+import scitex_logging as _logging
 import os
 import shutil
 import warnings

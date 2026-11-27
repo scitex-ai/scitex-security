@@ -15,8 +15,8 @@ certificate.
 ## CLI
 
 ```bash
-scitex-security domains candidates example.ai              # what would be checked (offline)
-scitex-security domains candidates example.ai --kind homoglyph --json
+scitex-security domains list-candidates example.ai              # what would be checked (offline)
+scitex-security domains list-candidates example.ai --kind homoglyph --json
 scitex-security domains watch example.ai example.net       # probe + table; exit 1 if new events
 scitex-security domains watch example.ai --notify          # mail new events (ops profile)
 scitex-security domains watch example.ai --dry-run-notify  # validate the mail, send nothing

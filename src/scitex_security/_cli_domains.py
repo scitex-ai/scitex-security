@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # File: src/scitex_security/_cli_domains.py
 
-"""``scitex-security domains {candidates,watch}`` — look-alike domain watch."""
+"""``scitex-security domains {list-candidates,watch}`` — look-alike domain watch."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def domains_group(ctx: click.Context) -> None:
 
     \b
     Example:
-      $ scitex-security domains candidates example.org
+      $ scitex-security domains list-candidates example.org
       $ scitex-security domains watch example.org
       $ scitex-security domains watch example.org example.net --notify
     """
@@ -25,7 +25,7 @@ def domains_group(ctx: click.Context) -> None:
         click.echo(ctx.get_help())
 
 
-@domains_group.command("candidates")
+@domains_group.command("list-candidates")
 @click.argument("domain")
 @click.option(
     "--kind",
@@ -41,9 +41,9 @@ def candidates_cmd(ctx, domain: str, kinds: tuple, as_json: bool) -> None:
 
     \b
     Example:
-      $ scitex-security domains candidates example.org
-      $ scitex-security domains candidates example.org --kind homoglyph
-      $ scitex-security domains candidates example.org --json
+      $ scitex-security domains list-candidates example.org
+      $ scitex-security domains list-candidates example.org --kind homoglyph
+      $ scitex-security domains list-candidates example.org --json
     """
     from .domains import generate_lookalike_domains
 

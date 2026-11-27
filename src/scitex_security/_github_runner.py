@@ -19,7 +19,7 @@ caller-supplied ``repo`` argument).
 
 from __future__ import annotations
 
-import logging
+import scitex_logging as logging
 import subprocess
 from typing import Optional
 

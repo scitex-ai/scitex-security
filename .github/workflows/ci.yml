@@ -1,14 +1,29 @@
 name: ci
 
 # ============================================================================
-# CANONICAL CI — IDENTICAL across every scitex ecosystem repo.
-# Synced by `scitex-dev ecosystem sync-workflows`; do not edit per-repo (drift
-# is reverted). Package-agnostic — the package name is derived from the
-# checkout, so there is nothing to substitute here.
+# CANONICAL scitex CI — thin org-reusable caller (the ONE per-repo shape).
+# Rendered for scitex-security by `scitex-dev ecosystem ci-template apply`.
 #
-# Runner: the self-hosted Spartan CPU runner (label spartan-cpu).
-# Deps: installed per run with `uv` (cached) — `.[all,dev]` so every repo's
-# optional deps are present; no baked-SIF completeness to maintain.
+# Job bodies live ONCE, org-side, at one reviewed immutable revision — a shared
+# workflow cannot drift per-repo (operator decision, 2026-07-21, superseding
+# the retired consolidated pr-ci.yml/release-ci.yml pair). This file carries
+# only triggers, concurrency, and thin `uses:` calls.
+# Pin the actual production commit qualified after the ordinary source merge;
+# runner-group SHA admission must not assume branch/SHA alias equivalence.
+#
+# Runner policy (operator 2026-10-03): company compute02/03/04 runners are
+# organization-only and require confirmed original actor, triggering actor
+# and same-repository PR author membership. Forks and unknown membership
+# run on GitHub-hosted hardware. Pass the repository/org CI_RUNS_ON preference
+# to the authoritative reusable admission workflow; the preference and labels
+# confer no authorization. An absent variable defaults to ubuntu-latest.
+#
+# Required-status-check contexts (branch protection must reference these;
+# under workflow_call GitHub renders "<caller-job-id> / <reusable job name>"):
+#   pytest-matrix / pytest-matrix-on-ubuntu-py<X.YY>
+#   import-smoke / import-smoke-on-ubuntu-py3-12
+#   quality-audit / audit
+#   rtd-sphinx-build / docs-sphinx
 # ============================================================================
 
 on:
@@ -22,115 +37,43 @@ on:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR runs; NEVER cancel post-merge/protected-branch runs
+  # (preserves the retired release-ci.yml coalescing semantic).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# EACH JOB PASSES ONLY WHAT ITS CALLEE DECLARES. Measured 2026-08-05 against
+# scitex-ai/.github:
+#   pytest-matrix     workflow_call.secrets: CODECOV_TOKEN (required: false)
+#   import-smoke      workflow_call: {}      -- declares nothing
+#   quality-audit     workflow_call: {}      -- declares nothing
+#   rtd-sphinx-build  workflow_call.inputs only, no secrets
+# A callee that declares no secrets cannot RECEIVE one -- passing an undeclared
+# secret is an error -- so those three take no `secrets:` key at all. That is
+# why this is not a uniform "name the secret" edit.
+#
+# These triggers (pull_request / push / schedule) do NOT hand secrets to fork
+# PRs, so this was never the attacker-triggerable exposure that cla.yml had.
+# It is over-broad forwarding: every secret the repo holds, offered to four
+# workflows that between them want one optional token. Fixed on merit.
 jobs:
   pytest-matrix:
-    # Job name is a REQUIRED status check — keep verbatim fleet-wide.
-    name: pytest-matrix-on-ubuntu-py${{ matrix.python-version }}
-    runs-on: [self-hosted, Linux, X64, spartan-cpu]
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          cache-dependency-glob: pyproject.toml
-      - name: Install (.[all,dev]) + pytest
-        run: |
-          set -euo pipefail
-          uv venv --python ${{ matrix.python-version }} .venv
-          uv pip install --python .venv/bin/python -e ".[all,dev]" \
-            || uv pip install --python .venv/bin/python -e ".[dev]" \
-            || uv pip install --python .venv/bin/python -e .
-          # kaleido/plotly image export needs Chrome; install best-effort (no-op for non-plotly repos)
-          yes | .venv/bin/plotly_get_chrome >/dev/null 2>&1 || true
-          PKG=$(basename "$(find src -maxdepth 1 -mindepth 1 -type d ! -name '*.egg-info' | sort | head -1)")
-          .venv/bin/python -m pytest tests/ --cov="src/$PKG" --cov-report=xml --cov-report=term
-      - name: Upload coverage to Codecov
-        # continue-on-error so a tokenless runner (e.g. self-hosted
-        # spartan-cpu, where CODECOV_TOKEN is unset) does NOT fail the
-        # job. codecov-action@v5 exits 255 on a pre-flight token check
-        # that `fail_ci_if_error: false` does not catch — that exit must
-        # not red the leg. Where the token IS provisioned (a repo
-        # *secret*, never a *variable*, so it can't be gated in `if:`),
-        # the upload still happens.
-        if: always() && matrix.python-version == '3.12'
-        continue-on-error: true
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          fail_ci_if_error: false
+    uses: scitex-ai/.github/.github/workflows/pytest-matrix.yml@cd4e545a20a1e35385ffe88f4a963ae3c500819b
+    with:
+      runs_on: ${{ vars.CI_RUNS_ON || '["ubuntu-latest"]' }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   import-smoke:
-    name: import-smoke-on-ubuntu-py3-12
-    runs-on: [self-hosted, Linux, X64, spartan-cpu]
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          cache-dependency-glob: pyproject.toml
-      - name: Install (no extras) + import
-        run: |
-          set -euo pipefail
-          uv venv --python 3.12 .venv
-          uv pip install --python .venv/bin/python -e .
-          PKG=$(basename "$(find src -maxdepth 1 -mindepth 1 -type d ! -name '*.egg-info' | sort | head -1)")
-          .venv/bin/python -c "import importlib; importlib.import_module('$PKG'); print('import OK:', '$PKG')"
+    uses: scitex-ai/.github/.github/workflows/import-smoke.yml@cd4e545a20a1e35385ffe88f4a963ae3c500819b
+    with:
+      runs_on: ${{ vars.CI_RUNS_ON || '["ubuntu-latest"]' }}
 
-  audit:
-    name: audit
-    runs-on: [self-hosted, Linux, X64, spartan-cpu]
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          cache-dependency-glob: pyproject.toml
-      - name: Install + audit the workspace
-        run: |
-          set -euo pipefail
-          uv venv --python 3.12 .venv
-          uv pip install --python .venv/bin/python -e ".[all,dev]" \
-            || uv pip install --python .venv/bin/python -e ".[dev]" \
-            || uv pip install --python .venv/bin/python -e .
-          uv pip install --python .venv/bin/python scitex-dev
-          # .venv/bin on PATH so audit-all's spawned `scitex-dev` subcommands resolve.
-          export PATH="$PWD/.venv/bin:$PATH"
-          DIST=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['name'])")
-          # --path . audits the CHECKOUT (PR code), not the runner's shared state.
-          scitex-dev ecosystem audit-all "$DIST" --path "$PWD"
+  quality-audit:
+    uses: scitex-ai/.github/.github/workflows/quality-audit.yml@cd4e545a20a1e35385ffe88f4a963ae3c500819b
+    with:
+      runs_on: ${{ vars.CI_RUNS_ON || '["ubuntu-latest"]' }}
 
-  docs-sphinx:
-    name: docs-sphinx
-    runs-on: [self-hosted, Linux, X64, spartan-cpu]
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          cache-dependency-glob: pyproject.toml
-      - name: Build sphinx HTML (satisfies PS-122; RTD bundle stays fresh)
-        run: |
-          set -euo pipefail
-          CONF=""
-          for c in docs/conf.py docs/source/conf.py docs/src/conf.py; do
-            [ -f "$c" ] && CONF="$c" && break
-          done
-          if [ -z "$CONF" ]; then
-            echo "no sphinx conf.py (checked docs[/source|/src]) — skipping; PS-122 satisfied by workflow content"
-            exit 0
-          fi
-          uv venv --python 3.12 .venv
-          uv pip install --python .venv/bin/python -e ".[docs]" \
-            || uv pip install --python .venv/bin/python -e ".[all,dev]" \
-            || { uv pip install --python .venv/bin/python -e .; uv pip install --python .venv/bin/python sphinx; }
-          CONFDIR=$(dirname "$CONF")
-          # use the `sphinx-build` console script (not `python -m sphinx`) so the
-          # auditor's PS-122 detects this workflow runs sphinx-build.
-          .venv/bin/sphinx-build -b html "$CONFDIR" "$CONFDIR/_build/html"
+  rtd-sphinx-build:
+    uses: scitex-ai/.github/.github/workflows/rtd-sphinx-build.yml@cd4e545a20a1e35385ffe88f4a963ae3c500819b
+    with:
+      runs_on: ${{ vars.CI_RUNS_ON || '["ubuntu-latest"]' }}

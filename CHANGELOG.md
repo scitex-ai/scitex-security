@@ -12,7 +12,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 ### Added
 
 - **Look-alike domain watch** (`scitex_security.domains`,
-  `scitex-security domains {candidates,watch}`). Generates typo
+  `scitex-security domains {list-candidates,watch}`). Generates typo
   (omission, repetition, transposition, adjacent-key), homoglyph / IDN
   (Cyrillic, Greek, accented Latin, ASCII `rn`/`m` etc., punycode forms),
   TLD-swap, hyphenation and prefix/suffix look-alikes of a domain; probes
@@ -29,6 +29,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - New runtime dependency `dnspython>=2.4` (pure Python) for MX/NS lookups.
+- Package diagnostics use `scitex-logging` instead of stdlib `logging`
+  (PS-220); new runtime dependency `scitex-logging>=0.2.1`.
+- CI: `ci.yml` is now the canonical org-reusable caller, so it publishes the
+  `pytest-matrix / ...` contexts branch protection already requires (the old
+  local jobs published unprefixed names, so required checks never arrived).
+  `cla.yml` calls the org CLA workflow; the local copy stored signatures on a
+  `cla-signatures` branch that does not exist, failing every PR.
+- `.scitex/security/runtime/` is ignored, not tracked (PS-234).
 
 ### Fixed
 
