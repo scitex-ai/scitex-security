@@ -92,6 +92,30 @@ scitex-security show-latest --security-dir ~/.scitex/security/runtime
 
 </details>
 
+## Look-alike domain watch
+
+Finds registered typo / homograph (e.g. Cyrillic `с` for Latin `c`) /
+TLD-swap / affix look-alikes of a domain you own, with their MX records
+(can they send mail as you?), Certificate Transparency certificates and
+RDAP registration dates. Remembers what it saw and alerts only on new
+registrations, new MX records and new certificates.
+
+```bash
+scitex-security domains candidates example.org          # offline: what would be checked
+scitex-security domains watch example.org example.net   # table of registered look-alikes
+scitex-security domains watch example.org --notify      # + mail new events (pip install 'scitex-security[notify]')
+```
+
+```python
+from scitex_security.domains import watch_domains
+
+result = watch_domains(["example.org"])
+for report in result["reports"]:
+    print(report.domain, [(h["risk"], h["name"], h["mx"]) for h in report.hits])
+```
+
+Daily systemd user units: [`examples/systemd/`](examples/systemd/).
+
 ## Demo
 
 ```mermaid

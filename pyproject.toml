@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-security"
-version = "0.2.0"
-description = "Unified security scanning for the SciTeX ecosystem: bandit + shellcheck + pip-audit + GitHub alerts (Dependabot, secret scanning, code scanning) in one orchestrator"
+version = "0.3.0"
+description = "Unified security scanning for the SciTeX ecosystem: bandit + shellcheck + pip-audit + GitHub alerts (Dependabot, secret scanning, code scanning) in one orchestrator, plus a look-alike (typosquat / homograph) domain watch"
 readme = "README.md"
 license = "AGPL-3.0-only"
 requires-python = ">=3.10"
 authors = [{name = "Yusuke Watanabe", email = "ywatanabe@scitex.ai"}]
-keywords = ["scitex", "security", "audit", "bandit", "shellcheck", "pip-audit", "github", "dependabot", "secret-scanning"]
+keywords = ["scitex", "security", "audit", "bandit", "shellcheck", "pip-audit", "github", "dependabot", "secret-scanning", "typosquatting", "homograph", "domain-monitoring"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -18,9 +18,16 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Security",
 ]
-dependencies = ["click>=8.0"]
+dependencies = [
+    "click>=8.0",
+    # `domains`: MX/NS lookups need a real DNS client; pure Python, no deps.
+    "dnspython>=2.4",
+]
 
 [project.optional-dependencies]
+# `domains watch --notify` mails through a scitex-notification sender
+# profile; 0.3.2 adds the PASSWORD_GPG credential source.
+notify = ["scitex-notification>=0.3.2"]
 dev = [
     "pytest",
     "pytest-cov",
@@ -28,6 +35,8 @@ dev = [
     # tests/develop/test_audit.py imports scitex_dev.testing.audit_all_for_package
     # which transitively needs the [cli-audit] extra.
     "scitex-dev[cli-audit]>=0.11.7",
+    # tests/scitex_security/domains/test__alert.py renders a real notice.
+    "scitex-notification>=0.3.2",
 ]
 docs = [
     "sphinx>=7.0",
@@ -37,7 +46,7 @@ docs = [
     "sphinx-autodoc-typehints>=1.25",
 ]
 all = [
-    "scitex-security[dev,docs]",
+    "scitex-security[dev,docs,notify]",
 ]
 
 [project.urls]
@@ -76,7 +85,3 @@ ignore = ["E501"]
 
 [tool.scitex-linter]
 library_dirs = ["src", "tests", "apps", "config", "docs", "examples"]
-
-dependencies = [
-    "scitex-dev>=0.17.8",
-]

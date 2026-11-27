@@ -16,6 +16,9 @@ scitex-security --help
 | `scitex-security check <repo>` | Check Dependabot / CodeQL / secret-scanning alerts |
 | `scitex-security check <repo> --save` | Save report to `~/.scitex/security/runtime/` |
 | `scitex-security show-latest` | Print most recent saved report |
+| `scitex-security domains candidates <domain>` | List generated look-alike names (offline) |
+| `scitex-security domains watch <domain>...` | Probe look-alikes; report; exit 1 on new events |
+| `scitex-security domains watch <domain>... --notify` | Also mail new events (scitex-notification `ops` profile) |
 | `scitex-security list-python-apis` | List public Python API surface |
 | `scitex-security skills list` | List bundled agent skill files |
 | `scitex-security skills install` | Install skills into `~/.scitex/dev/skills/` |
