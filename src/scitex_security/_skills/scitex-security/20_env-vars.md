@@ -12,6 +12,7 @@ tags: [scitex-security-env-vars]
 | `SCITEX_SECURITY_CONFIG` | Path to YAML config (overrides `~/.scitex/security/config.yaml`). | unset |
 | `SCITEX_SECURITY_DIR` | Override the alerts output directory. | unset (uses `<project>/.scitex/security/runtime/` or `~/.scitex/security/runtime/`) |
 | `SCITEX_DIR` | Relocate the entire user-scope tree. | `~/.scitex` |
+| *credential-named vars* (`*TOKEN*`, `*SECRET*`, `*API_KEY*`, `*PASSWORD*`, …) | Their live values are masked by `scitex-security redact` (read only, never printed). | — |
 | `GH_TOKEN` / `GITHUB_TOKEN` | Auth token for the `gh` CLI subprocess. | unset |
 
 See `01_ecosystem/04_environment-variables.md` and `01_ecosystem/06_local-state-directories.md` for conventions.

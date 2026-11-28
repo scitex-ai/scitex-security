@@ -19,9 +19,10 @@ caller-supplied ``repo`` argument).
 
 from __future__ import annotations
 
-import scitex_logging as logging
 import subprocess
 from typing import Optional
+
+import scitex_logging as logging
 
 # Re-export so any caller of ``from scitex_security._github_runner import
 # GitHubSecurityError`` resolves to the canonical type in ``github.py``.

@@ -8,6 +8,8 @@ Subcommands follow the verb-noun convention (general/03_interface_02_cli):
 
     scitex-security check [REPO]            # Check Dependabot/CodeQL alerts
     scitex-security show-latest             # Print latest saved report
+    scitex-security redact SOURCE           # Mask secrets in a file / stdin / agent hook output
+    scitex-security rotate-credential P V   # Operator-run rotation inside a signed payload
     scitex-security list-python-apis        # Introspect public Python API
     scitex-security mcp list-tools          # Introspect MCP tool surface (none)
 """
@@ -415,6 +417,12 @@ main.add_command(_skills_group, name="skills")
 from ._cli_domains import domains_group as _domains_group  # noqa: E402
 
 main.add_command(_domains_group, name="domains")
+
+from ._redact._cli import redact_cmd as _redact_cmd  # noqa: E402
+from ._rotate._cli import rotate_credential_cmd as _rotate_cmd  # noqa: E402
+
+main.add_command(_redact_cmd, name="redact")
+main.add_command(_rotate_cmd, name="rotate-credential")
 
 
 # Wire canonical install-shell-completion + print-shell-completion (§1a).

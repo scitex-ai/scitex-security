@@ -14,11 +14,12 @@ Follows the SciTeX local-state-directories convention
 
 from __future__ import annotations
 
-import scitex_logging as _logging
 import os
 import shutil
 import warnings
 from pathlib import Path
+
+import scitex_logging as _logging
 
 #: Package short name (``scitex-security`` → ``security``).
 PKG_SHORT = "security"
