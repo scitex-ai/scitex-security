@@ -19,7 +19,6 @@ import json
 import os
 
 import pytest
-
 from _helpers import (
     FakeAlertFn,
     FakeAuthCheck,
@@ -28,6 +27,7 @@ from _helpers import (
     make_called_process_error,
     swap_attrs,
 )
+
 from scitex_security import github as github_module
 from scitex_security.github import (
     GitHubSecurityError,

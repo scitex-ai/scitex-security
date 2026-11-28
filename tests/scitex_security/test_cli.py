@@ -14,8 +14,6 @@ module namespace with the ``swap_attrs`` context manager from
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
-
 from _helpers import (
     FakeAlertFn,
     FakeFormatReport,
@@ -23,6 +21,8 @@ from _helpers import (
     FakeSavePath,
     swap_attrs,
 )
+from click.testing import CliRunner
+
 from scitex_security import cli as cli_module
 from scitex_security.cli import main
 from scitex_security.github import GitHubSecurityError
@@ -128,7 +128,14 @@ class TestCheckCommand:
         ):
             CliRunner().invoke(
                 main,
-                ["github", "check", "owner/repo", "--save", "--output-dir", "/custom/dir"],
+                [
+                    "github",
+                    "check",
+                    "owner/repo",
+                    "--save",
+                    "--output-dir",
+                    "/custom/dir",
+                ],
             )
         # Assert — save_fn signature: (alerts, output_dir, create_symlink)
         assert save_fn.calls[0][1] == Path("/custom/dir")

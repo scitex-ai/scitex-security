@@ -11,10 +11,11 @@ of the W1-reverse per ADR-0002 (scitex-dev #142).
 
 from __future__ import annotations
 
-import scitex_logging as logging
 import shutil
 from pathlib import Path
 from typing import Optional
+
+import scitex_logging as logging
 
 from ._bandit import run_bandit
 from ._format import format_json
@@ -44,6 +45,7 @@ def _is_gh_authenticated() -> bool:
         return False
     try:
         import subprocess
+
         result = subprocess.run(
             ["gh", "auth", "status"],
             capture_output=True,

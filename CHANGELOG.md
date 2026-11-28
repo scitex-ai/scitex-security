@@ -7,6 +7,37 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Secret redaction** (`scitex-security redact SOURCE`, `redact_text`,
+  `build_redactor`). Detection is gitleaks (`gitleaks stdin`, maintained
+  upstream rules; packaged `_redact/gitleaks.toml` with `[extend]
+  useDefault = true`, overridable with `--config` or `redact.gitleaks_config`
+  in the config chain) together with the exact live values of
+  credential-named env vars, whatever their format. Text mode filters a file
+  or `-` (stdin) to stdout. `--hook claude-post-tool-use` implements the Claude Code
+  PostToolUse contract (`hookSpecificOutput.updatedToolOutput` for Bash
+  stdout/stderr). Per-tool adapters let Read/Grep/WebFetch be added later.
+  When gitleaks is missing or fails, exact-value redaction still runs and a
+  warning is emitted; it never fails open silently. This responds to the
+  2026-11-28 incident in which a fine-grained GitHub PAT got past a
+  hand-written pattern list.
+- **Operator-run credential rotation** (`scitex-security rotate-credential
+  PAYLOAD VARS [--dry-run]`), ported from the unversioned controller tool.
+  The value comes from a hidden `/dev/tty` prompt only. The work runs in an
+  isolated `python -I` worker that reports to the launcher through JSON
+  events carrying names, statuses and hashes. The worker proves that only
+  the named variables changed in a clean bash, re-encrypts to the same
+  recipients, builds the installed manifest plus exactly one entry, and asks
+  for a typed `install` confirmation before signing. It then installs on
+  every configured host, skipping hosts without the trust dir and reporting
+  why, and opens a dotfiles PR. Hosts, controller, issuer fingerprint, paths
+  and GitHub-token routing are config (`rotate_credential:`); no fleet facts
+  are hardcoded.
+- SciTeX config chain loader (`--config` → `$SCITEX_SECURITY_CONFIG` →
+  `<project>/.scitex/security/config.yaml` → `~/.scitex/security/config.yaml`);
+  new dependency `pyyaml`.
+
 ## [0.3.1] — 2026-11-27
 
 First published release of the 0.3 line; contents are those of 0.3.0 below.

@@ -1,0 +1,17 @@
+# gitleaks config for redact_secrets_in_bash_output.sh
+#
+# Keeps every maintained upstream rule (useDefault) and is the ONE place to
+# extend detection: add [[rules]] for SciTeX-specific formats, or
+# [[allowlists]] for false positives. No hook code change needed.
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+title = "scitex agent output redaction"
+
+[extend]
+useDefault = true
+
+# Example of a local rule (kept commented until a real format needs it):
+# [[rules]]
+# id = "scitex-internal-token"
+# description = "SciTeX internal bearer"
+# regex = '''stx_[A-Za-z0-9]{32}'''

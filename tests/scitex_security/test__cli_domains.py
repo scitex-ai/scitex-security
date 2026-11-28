@@ -25,7 +25,8 @@ def test_candidates_json_lists_punycode():
     runner = CliRunner()
     # Act
     result = runner.invoke(
-        main, ["domains", "list-candidates", "example.ai", "--kind", "homoglyph", "--json"]
+        main,
+        ["domains", "list-candidates", "example.ai", "--kind", "homoglyph", "--json"],
     )
     # Assert
     assert any(
@@ -38,6 +39,8 @@ def test_candidates_rejects_unknown_kind():
     # Arrange
     runner = CliRunner()
     # Act
-    result = runner.invoke(main, ["domains", "list-candidates", "example.ai", "--kind", "x"])
+    result = runner.invoke(
+        main, ["domains", "list-candidates", "example.ai", "--kind", "x"]
+    )
     # Assert
     assert result.exit_code != 0

@@ -60,9 +60,7 @@ class FakeRun:
             raise self.side_effect
         if callable(self.side_effect):
             return self.side_effect(args, **kwargs)
-        return _CompletedProc(
-            stdout=self.stdout, stderr="", returncode=self.returncode
-        )
+        return _CompletedProc(stdout=self.stdout, stderr="", returncode=self.returncode)
 
 
 @dataclass
@@ -196,7 +194,21 @@ def make_called_process_error(
     return subprocess.CalledProcessError(returncode, cmd, stderr=stderr)
 
 
+def raised(fn: Callable, *args: Any, **kwargs: Any) -> Optional[BaseException]:
+    """Call ``fn`` and return the exception it raised (``None`` if it returned).
+
+    Lets a test keep one assertion on the error instead of a
+    ``pytest.raises`` block plus a second assertion (STX-TQ007).
+    """
+    try:
+        fn(*args, **kwargs)
+    except Exception as exc:  # the caller asserts on the type
+        return exc
+    return None
+
+
 __all__ = [
+    "raised",
     "FakeRun",
     "FakeGhRunner",
     "FakeAuthCheck",

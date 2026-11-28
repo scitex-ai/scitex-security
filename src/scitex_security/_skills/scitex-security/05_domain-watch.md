@@ -28,12 +28,14 @@ scitex-security domains watch example.ai --no-ct --no-rdap --json
 ```python
 from scitex_security.domains import generate_lookalike_domains, watch_domains
 
-candidates = generate_lookalike_domains("example.ai")          # [Candidate(name, ascii, kind, detail)]
+candidates = generate_lookalike_domains(
+    "example.ai"
+)  # [Candidate(name, ascii, kind, detail)]
 result = watch_domains(["example.ai"], notify=False)
 for report in result["reports"]:
-    for hit in report.hits:                                     # registered look-alikes
+    for hit in report.hits:  # registered look-alikes
         print(hit["risk"], hit["name"], hit["mx"], hit["created"])
-    for event in report.events:                                 # new since last run
+    for event in report.events:  # new since last run
         print(event.kind, event.name, event.detail)
 ```
 

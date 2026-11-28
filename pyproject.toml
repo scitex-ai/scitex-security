@@ -24,6 +24,8 @@ dependencies = [
     "dnspython>=2.4",
     # PS-220: package diagnostics go through scitex-logging, not stdlib logging.
     "scitex-logging>=0.2.1",
+    # The SciTeX config chain (~/.scitex/security/config.yaml).
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -63,7 +65,7 @@ scitex-security = "scitex_security.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-scitex_security = ["_skills/**/*.md"]
+scitex_security = ["_skills/**/*.md", "_redact/gitleaks.toml"]
 
 [project.entry-points."scitex_dev.skills"]
 scitex-security = "scitex_security"

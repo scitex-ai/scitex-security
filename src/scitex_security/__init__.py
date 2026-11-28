@@ -44,6 +44,23 @@ try:
 except ImportError:  # pragma: no cover — only on ancient Pythons
     __version__ = "0.0.0+local"
 
+from ._redact._core import (
+    MASK,
+    GitleaksError,
+    RedactionResult,
+    Redactor,
+    build_redactor,
+    credential_env_values,
+    find_gitleaks,
+    packaged_gitleaks_config,
+    redact_text,
+)
+from ._redact._hook import handle_claude_post_tool_use
+from ._rotate._launch import (
+    RotationConfigError,
+    load_rotate_settings,
+    rotate_credential,
+)
 from ._runner import audit
 from .github import (
     GitHubSecurityError,
@@ -79,6 +96,19 @@ __all__ = [
     "format_alerts_report",
     "get_latest_alerts_file",
     "save_alerts_to_file",
+    "MASK",
+    "GitleaksError",
+    "RedactionResult",
+    "Redactor",
+    "build_redactor",
+    "credential_env_values",
+    "find_gitleaks",
+    "packaged_gitleaks_config",
+    "redact_text",
+    "handle_claude_post_tool_use",
+    "RotationConfigError",
+    "load_rotate_settings",
+    "rotate_credential",
 ]
 
 
