@@ -1,12 +1,74 @@
-name: CLA Assistant
+name: cla
 
-# PILOT: org-level reusable-workflow caller (scitex-ai/.github, 2026-07-10).
-# Triggers/permissions preserved verbatim from the prior local file.
-# owner_login=ywatanabe1989 and default_branch=main match the reusable
-# workflow's defaults, so no override needed for those. owner_allowlist is
-# overridden below because this repo's prior hardcoded allowlist
-# ("bot*,ywatanabe1989,LLEmacs") differs from the reusable default
-# ("bot*,ywatanabe1989").
+# CALLS the org reusable rather than re-implementing it (PS-231).
+#
+# WHY THIS ONE COULD BE CONVERTED WHEN THE OTHER FOUR COULD NOT. All five of
+# this repo's PS-231 workflows were diffed against the org copy in BOTH
+# directions on 2026-08-18, and four turned out to hold leaf-only capabilities
+# that must be pushed upstream before their local body can be deleted. This one
+# does not: the org reusable is a strict superset, verified field by field
+# rather than by size.
+#
+#   path-to-signatures   org "signatures/cla.json"          identical
+#   branch               org "cla-signatures"               identical
+#   allowlist            org input, default bot*,ywatanabe1989   identical
+#   runs_on              org input, default ["ubuntu-latest"]    identical posture
+#   path-to-document     org derives it from ${{ github.repository }}
+#                        and inputs.default_branch — BETTER than the hardcoded
+#                        URL this file used to carry, which would have rotted
+#                        silently on a repo rename.
+#
+# THE SECURITY PROPERTY IS PRESERVED, AND THAT WAS THE THING TO CHECK. This
+# workflow runs a third-party action under `issue_comment` and
+# `pull_request_target`, which are UNAUTHENTICATED triggers on a public repo:
+# `pull_request_target` runs in the BASE repo's context and `issue_comment` is
+# not gated at all, so the fork-PR approval setting does not cover them. Spartan
+# runners are persistent and their $HOME is the operator's real home holding the
+# live fleet credential, so moving this onto a self-hosted runner would let a
+# stranger execute third-party code beside that credential by commenting on an
+# issue. That is why ubuntu-latest here is a deliberate exception (PS-224),
+# escalated to the operator rather than silently created.
+#
+# `runs_on` IS PASSED EXPLICITLY BELOW, and the explicitness is the point. The
+# org reusable's default is already '["ubuntu-latest"]' (org #29 inverted it so
+# self-hosted is opt-in), so passing nothing would land on the same runner —
+# this is not a behaviour change. It is a change in WHERE THE DECISION LIVES.
+#
+# Relying on the default made this repo's security posture a property of a file
+# in ANOTHER repository, readable only by someone who thinks to go and look.
+# Two things happened that argue against that:
+#
+#   * That remote default can be changed by a PR none of this repo's reviewers
+#     see. Inheriting safety silently is one edit away from inheriting danger
+#     silently — the same argument org #29 itself used to invert the default
+#     ("a default is not a decision anyone makes — it is one they never see").
+#   * The org file's `description:` for this input still says "Defaults to the
+#     Spartan pool" — stale prose from before the inversion, sitting directly
+#     above a comment saying the opposite and a literal `default:` saying the
+#     opposite again. On 2026-08-18 that stale line was read as authoritative
+#     and very nearly produced a false security-regression report against this
+#     very PR. Prose about a value is not the value.
+#
+# With the value written here, nobody has to consult a remote file at all to
+# know where this job runs. If you are tempted to change it to a self-hosted
+# pool, read the paragraph above first: that is a security regression, not a
+# compliance win.
+#
+# NOTE FOR THE no-hosted-runners GUARD (SAC-CI004): a caller has no local
+# `runs-on:`, so a guard that parses only local `runs-on:` keys cannot see where
+# this job runs and must NOT conclude the hosted-runner allowlist entry has
+# become unnecessary. That entry is the security argument, not bookkeeping.
+# Unresolvable is not unhosted.
+#
+# The reusable workflow declares GH_PERSONAL_ACCESS_TOKEN. Pass the repository's
+# canonical secret of the same name so the CLA action receives a non-empty PAT.
+# GITHUB_TOKEN is GitHub-provided and is forwarded automatically.
+#
+# TRIGGERS ARE UNCHANGED ON PURPOSE. The org reusable also has an owner
+# direct-push bypass job gated on `github.event_name == 'push'`. This caller does
+# not send `push`, so that job never fires and behaviour matches what this repo
+# had before. Adding `push` would ENABLE a new bypass — a behaviour change, not a
+# consolidation — so it is deliberately left for a separate, reviewable decision.
 
 on:
   issue_comment:
@@ -21,19 +83,13 @@ permissions:
   statuses: write
 
 jobs:
-  call:
-    uses: scitex-ai/.github/.github/workflows/cla.yml@main
+  CLAssistant:
+    uses: scitex-ai/.github/.github/workflows/cla.yml@8c646081e9f1352077d3d8674052cce7ec75a1b7
     with:
-      owner_allowlist: "bot*,ywatanabe1989,LLEmacs"
-    # NAMED SECRET, not `secrets: inherit`. This caller fires on
-    # `issue_comment` and `pull_request_target`, both of which an
-    # UNAUTHENTICATED outsider can trigger on a public repo, so `inherit`
-    # would forward EVERY secret this repository holds into a job a stranger
-    # caused to run -- on the shared, persistent self-hosted runner the
-    # callee may target. Neither file reveals that alone: the caller names no
-    # `runs-on`, so the destination lives in the callee. Pass ONLY the one
-    # secret the callee declares (`GH_PERSONAL_ACCESS_TOKEN`, required).
-    # Audit rule PS-224 flags the `inherit` form; `inherit` is not a
-    # convenience here, it is the vulnerability.
+      # MUST be a JSON ARRAY STRING — the reusable feeds it to fromJSON. A YAML
+      # list decodes to something fromJSON rejects, and the resulting label
+      # mismatch makes the job QUEUE FOREVER rather than fail, which is
+      # indistinguishable from "still waiting" in the run list.
+      runs_on: '["ubuntu-latest"]'
     secrets:
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
